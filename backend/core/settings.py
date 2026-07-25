@@ -25,12 +25,17 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')
 DEBUG = os.getenv('DEBUG') == 'True'
 
 # Comma-separated list from .env — no wildcard '*' permitted in production.
-# Dev default: localhost only.  Prod .env example:
-#   ALLOWED_HOSTS=urbanixsolution.com,www.urbanixsolution.com,<render-host>.onrender.com
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
+# Default already includes the Azure App Service hostname so it works
+# even if the env var hasn't been set on the Azure dashboard yet.
+# Prod .env value:
+#   ALLOWED_HOSTS=urbanixsolution.com,www.urbanixsolution.com,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net
+ALLOWED_HOSTS = [h.strip() for h in os.getenv(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net'
+).split(',') if h.strip()]
 
-# Azure ka live URL permanently allow karne ke liye
-ALLOWED_HOSTS.append('urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net')
+# Ensure Django redirects /path to /path/ where needed (safe default).
+APPEND_SLASH = True
 # ---------------------------------------------------------------------------
 # Application Definition
 # ---------------------------------------------------------------------------
