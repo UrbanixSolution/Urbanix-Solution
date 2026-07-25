@@ -144,12 +144,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Enable Whitenoise compression and caching
+# Using CompressedStaticFilesStorage prevents 500 Internal Server Errors when
+# static files or fonts are missing in production (unlike CompressedManifestStaticFilesStorage).
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
