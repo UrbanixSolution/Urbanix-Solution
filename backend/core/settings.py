@@ -12,6 +12,21 @@ import dj_database_url
 load_dotenv()
 
 # ---------------------------------------------------------------------------
+# Python 3.14 Compatibility Patch (django.template.context.BaseContext.__copy__)
+# Fixes: AttributeError: 'super' object has no attribute 'dicts' when copying
+# Django contexts under Python 3.14.
+# ---------------------------------------------------------------------------
+import django.template.context
+
+def _patched_base_context_copy(self):
+    duplicate = self.__class__.__new__(self.__class__)
+    duplicate.__dict__.update(self.__dict__)
+    duplicate.dicts = self.dicts[:]
+    return duplicate
+
+django.template.context.BaseContext.__copy__ = _patched_base_context_copy
+
+# ---------------------------------------------------------------------------
 # Base Paths
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
