@@ -9,10 +9,12 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net/api';
+    const destinationBase = backendUrl.replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: `${destinationBase}/:path*`,
       },
     ];
   },

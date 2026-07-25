@@ -2,15 +2,9 @@
  * Helper to resolve absolute API URL dynamically for local dev, localhost, and network IPs (e.g. 10.121.117.206).
  */
 export function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
-  if (typeof window !== 'undefined') {
-    const currentHost = window.location.hostname;
-    // If accessed via local network IP (e.g. 10.121.117.206:3000), route API calls to the same IP at port 8000
-    if (currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
-      return `http://${currentHost}:8000/api`;
-    }
-  }
-  return envUrl;
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'https://urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net/api';
+  // Ensure trailing slashes are trimmed so paths like `${base}/contact/` format cleanly without double slashes
+  return envUrl.replace(/\/+$/, '');
 }
 
 // ─────────────────────────────────────────────────────────────

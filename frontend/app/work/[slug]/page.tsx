@@ -106,7 +106,7 @@ const SECTOR_DATA: Record<string, SectorConfig> = {
 // Data Fetching Helper
 // ─────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net/api').replace(/\/+$/, '')
 
 async function getSectorData(slug: string): Promise<{ category: Category; projects: Project[]; subtitle?: string }> {
   const staticSector = SECTOR_DATA[slug]
