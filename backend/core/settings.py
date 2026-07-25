@@ -29,6 +29,8 @@ DEBUG = os.getenv('DEBUG') == 'True'
 #   ALLOWED_HOSTS=urbanixsolution.com,www.urbanixsolution.com,<render-host>.onrender.com
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
 
+# Azure ka live URL permanently allow karne ke liye
+ALLOWED_HOSTS.append('urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net')
 # ---------------------------------------------------------------------------
 # Application Definition
 # ---------------------------------------------------------------------------
