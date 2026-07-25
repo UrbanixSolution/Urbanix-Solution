@@ -1,0 +1,677 @@
+[
+{
+  "model": "api.service",
+  "pk": 1,
+  "fields": {
+    "title": "Business Websites",
+    "slug": "business-websites",
+    "short_description": "High-converting landing pages and custom business websites built for maximum conversions.",
+    "full_description": "We build lightning-fast, custom websites tailored specifically for local businesses. Every layout is engineered to turn casual visitors into paying customers with clear calls-to-action, instant WhatsApp integration, and mobile optimization.",
+    "pricing_text": "Starting at ₹2,999 one-time",
+    "base_price": "2999.00",
+    "features": [
+      "100% Mobile & Desktop Responsive Design",
+      "Direct WhatsApp & Instant Lead Call Buttons",
+      "Google Maps & Business Profile Integration",
+      "Sub-1 Second Page Load Speed Optimization",
+      "On-Page Local SEO Setup",
+      "Free SSL Certificate & Security Hardening"
+    ],
+    "icon_name": "Globe",
+    "order": 1,
+    "is_active": true,
+    "created_at": "2026-07-23T06:35:03.860Z"
+  }
+},
+{
+  "model": "api.service",
+  "pk": 2,
+  "fields": {
+    "title": "E-Commerce Setup",
+    "slug": "e-commerce",
+    "short_description": "Turnkey digital storefronts with secure payment integrations and inventory sync.",
+    "full_description": "Launch your online store with zero hassle. We handle complete catalog setup, UPI/credit card payment gateway integrations, automated WhatsApp order receipts, and real-time inventory management.",
+    "pricing_text": "Starting at ₹9,999 one-time",
+    "base_price": "9999.00",
+    "features": [
+      "Razorpay / Stripe Payment Gateway Integration",
+      "Automated WhatsApp Order Confirmation",
+      "Product Inventory & Order Tracking Dashboard",
+      "Discount Coupon & Promotional Offer Setup",
+      "High-converting One-Page Checkout Experience",
+      "Sales Analytics & Customer CRM Integration"
+    ],
+    "icon_name": "ShoppingCart",
+    "order": 2,
+    "is_active": true,
+    "created_at": "2026-07-23T06:35:03.864Z"
+  }
+},
+{
+  "model": "api.service",
+  "pk": 3,
+  "fields": {
+    "title": "Reels & Video Editing",
+    "slug": "video-editing",
+    "short_description": "High-impact short-form video reels, promotional edits, and brand stories.",
+    "full_description": "Capture attention on Instagram Reels, YouTube Shorts, and Facebook. We edit high-engagement short videos with dynamic motion graphics, subtitles, sound design, and viral hooks to build local brand awareness.",
+    "pricing_text": "Starting at ₹4,999/mo",
+    "base_price": "4999.00",
+    "features": [
+      "1080p High Definition Vertical Edits (9:16)",
+      "Dynamic Captions & Motion Graphics",
+      "Trending Audio & Sound Effects Mix",
+      "Custom Thumbnails & Cover Designs",
+      "Script Hook & Content Strategy Guidance",
+      "Fast 48-Hour Edit Turnaround"
+    ],
+    "icon_name": "Video",
+    "order": 3,
+    "is_active": true,
+    "created_at": "2026-07-23T06:35:03.870Z"
+  }
+},
+{
+  "model": "api.service",
+  "pk": 4,
+  "fields": {
+    "title": "Performance Ads",
+    "slug": "performance-ads",
+    "short_description": "Data-driven paid ad campaigns designed to maximize ROI and customer acquisition.",
+    "full_description": "Stop throwing money at unmeasured marketing. Our targeted Google and Meta ad campaigns reach local customers actively searching for your service in your city or neighborhood.",
+    "pricing_text": "Starting at ₹5,000/mo management",
+    "base_price": "5000.00",
+    "features": [
+      "Hyper-Local Audience Geo-Targeting",
+      "High-converting Ad Copy & Visual Design",
+      "Direct WhatsApp & Call Lead Campaigns",
+      "A/B Creative & Headline Testing",
+      "Weekly Performance & ROI Dashboards",
+      "Dedicated Campaign Manager"
+    ],
+    "icon_name": "Target",
+    "order": 4,
+    "is_active": true,
+    "created_at": "2026-07-23T06:35:03.874Z"
+  }
+},
+{
+  "model": "api.service",
+  "pk": 6,
+  "fields": {
+    "title": "Maintenance & Support",
+    "slug": "maintenance",
+    "short_description": "Ongoing technical updates, security monitoring, performance tuning, and priority support.",
+    "full_description": "Keep your digital asset running flawlessly 24/7. Our monthly retainers include cloud hosting management, daily security backups, framework updates, and instant technical support.",
+    "pricing_text": "Starting at ₹4,999/mo",
+    "base_price": null,
+    "features": [
+      "24/7 Server Uptime & Health Monitoring",
+      "Daily Automated Cloud Database Backups",
+      "Monthly Security Hardening & Malware Scans",
+      "Content & Pricing Update Requests",
+      "Priority WhatsApp Technical Support",
+      "Zero Downtime Guarantee"
+    ],
+    "icon_name": "ShieldCheck",
+    "order": 6,
+    "is_active": true,
+    "created_at": "2026-07-23T06:35:03.881Z"
+  }
+},
+{
+  "model": "api.pricingtier",
+  "pk": 4,
+  "fields": {
+    "service": 2,
+    "name": "Starter Online Store",
+    "price": "₹9,999",
+    "delivery_time": "Delivered in 5-10 Days",
+    "features": [
+      "Up to 20 Product Listings",
+      "UPI / Razorpay Payment Gateway",
+      "Order Notification via WhatsApp",
+      "Mobile Friendly Storefront"
+    ],
+    "is_popular": false,
+    "order": 1
+  }
+},
+{
+  "model": "api.pricingtier",
+  "pk": 5,
+  "fields": {
+    "service": 2,
+    "name": "Full E-Commerce Platform",
+    "price": "₹24,999",
+    "delivery_time": "Delivered in 10-15 Days",
+    "features": [
+      "Unlimited Products & Categories",
+      "Inventory Management Dashboard",
+      "Coupon & Discount Engine",
+      "Automated Invoice Generation"
+    ],
+    "is_popular": true,
+    "order": 2
+  }
+},
+{
+  "model": "api.pricingtier",
+  "pk": 9,
+  "fields": {
+    "service": 1,
+    "name": "Single-Page",
+    "price": "₹2,999",
+    "delivery_time": "Delivered in 3-5 Days",
+    "features": [
+      "1 High-Converting Page",
+      "Mobile & Desktop Responsive",
+      "WhatsApp Chat Lead Button",
+      "Basic SEO Setup"
+    ],
+    "is_popular": false,
+    "order": 1
+  }
+},
+{
+  "model": "api.pricingtier",
+  "pk": 10,
+  "fields": {
+    "service": 1,
+    "name": "Local Business Website (3-5 Pages)",
+    "price": "₹5,999",
+    "delivery_time": "Delivered in 4-5 Days",
+    "features": [
+      "3-5 Custom Pages (Home, Services, Contact, etc.)",
+      "Dynamic Admin CMS Panel",
+      "On-Page SEO Optimization",
+      "Google Map & Local Business Setup"
+    ],
+    "is_popular": true,
+    "order": 2
+  }
+},
+{
+  "model": "api.pricingtier",
+  "pk": 11,
+  "fields": {
+    "service": 1,
+    "name": "Startup Landing Page (Lead-Gen)",
+    "price": "₹8,999",
+    "delivery_time": "Delivered in 4-5 Days",
+    "features": [
+      "High-Converting Copy & Layout",
+      "Lead Capture Form + Instant WhatsApp Alert",
+      "Sub-1 Second Page Load Speed",
+      "A/B Test Ready Architecture"
+    ],
+    "is_popular": false,
+    "order": 3
+  }
+},
+{
+  "model": "api.category",
+  "pk": 1,
+  "fields": {
+    "name": "Local Business",
+    "slug": "local-business",
+    "description": "High-converting custom websites for local service providers and retail stores.",
+    "icon_name": "Store",
+    "order": 1
+  }
+},
+{
+  "model": "api.category",
+  "pk": 2,
+  "fields": {
+    "name": "Education & Communities",
+    "slug": "education",
+    "description": "Interactive learning platforms, LMS, and community spaces.",
+    "icon_name": "GraduationCap",
+    "order": 2
+  }
+},
+{
+  "model": "api.category",
+  "pk": 3,
+  "fields": {
+    "name": "Personal Portfolios",
+    "slug": "portfolios",
+    "description": "Sleek, responsive portfolios for creators, executives, and professionals.",
+    "icon_name": "User",
+    "order": 3
+  }
+},
+{
+  "model": "api.portfolioproject",
+  "pk": 1,
+  "fields": {
+    "title": "Pristinix Premium Car Care",
+    "short_description": "Transformed Hyderabad doorstep car care with an automated WhatsApp booking engine. Delivered +340% lead conversion growth and 99/100 PageSpeed scores.",
+    "category": 1,
+    "sector": "local-business",
+    "image": "",
+    "tech_tags": [
+      "WhatsApp Lead Funnel",
+      "Next.js",
+      "Local SEO",
+      "Google Maps API"
+    ],
+    "live_link": "https://pristinix.vercel.app",
+    "results_highlight": "Result: Automated WhatsApp Lead Funnel",
+    "is_featured": true,
+    "created_at": "2026-07-22T17:10:41.614Z",
+    "updated_at": "2026-07-23T07:33:51.422Z"
+  }
+},
+{
+  "model": "api.portfolioproject",
+  "pk": 2,
+  "fields": {
+    "title": "CECP",
+    "short_description": "Multi-team project tracking and workspace system built for an educational technical club.",
+    "category": 2,
+    "sector": "education",
+    "image": "",
+    "tech_tags": [
+      "Next.js",
+      "TypeScript",
+      "Django REST",
+      "WebSockets",
+      "Tailwind CSS"
+    ],
+    "live_link": "http://cecp.vercel.app/",
+    "results_highlight": "Result: Real-time Multi-Team Workspace",
+    "is_featured": true,
+    "created_at": "2026-07-22T17:10:41.617Z",
+    "updated_at": "2026-07-23T07:51:41.417Z"
+  }
+},
+{
+  "model": "api.portfolioproject",
+  "pk": 3,
+  "fields": {
+    "title": "Digital Portfolio",
+    "short_description": "High-performance interactive portfolio built for a software developer showcasing key projects and skills.",
+    "category": 3,
+    "sector": "portfolios",
+    "image": "",
+    "tech_tags": [
+      "Next.js",
+      "Framer Motion",
+      "Tailwind CSS",
+      "TypeScript"
+    ],
+    "live_link": "https://rahulkumarportfolio.online/",
+    "results_highlight": "Result: 3x Client Inquiries",
+    "is_featured": true,
+    "created_at": "2026-07-22T17:10:41.621Z",
+    "updated_at": "2026-07-23T07:52:54.425Z"
+  }
+},
+{
+  "model": "api.contactlead",
+  "pk": 1,
+  "fields": {
+    "name": "Test Lead",
+    "email": "test@example.com",
+    "phone": "+917631428236",
+    "service_interested": "business-websites",
+    "message": "Hello CodeCraft!",
+    "created_at": "2026-07-22T17:15:01.479Z"
+  }
+},
+{
+  "model": "api.contactlead",
+  "pk": 2,
+  "fields": {
+    "name": "Test Lead",
+    "email": "test@example.com",
+    "phone": "9876543210",
+    "service_interested": "business-websites",
+    "message": "Test submission from integration check",
+    "created_at": "2026-07-23T06:13:30.829Z"
+  }
+},
+{
+  "model": "api.contactlead",
+  "pk": 3,
+  "fields": {
+    "name": "Rahul Kumar",
+    "email": "rahulraj2392006@gmail.com",
+    "phone": "07631428236",
+    "service_interested": "e-commerce",
+    "message": "kjndfksjdnfksj",
+    "created_at": "2026-07-23T06:24:55.448Z"
+  }
+},
+{
+  "model": "api.careerapplication",
+  "pk": 3,
+  "fields": {
+    "name": "Spam Test",
+    "email": "freelancer@example.com",
+    "phone": "9876543210",
+    "role_applied": "Full-Stack Developer",
+    "state": "Delhi",
+    "district": "Delhi",
+    "portfolio_link": "https://example.com",
+    "cover_letter": "Test",
+    "created_at": "2026-07-23T11:45:47.828Z"
+  }
+},
+{
+  "model": "api.careerapplication",
+  "pk": 4,
+  "fields": {
+    "name": "Bot User 1",
+    "email": "bot1@spamtest.com",
+    "phone": "9000000001",
+    "role_applied": "Full-Stack Developer",
+    "state": "Delhi",
+    "district": "Delhi",
+    "portfolio_link": "",
+    "cover_letter": "",
+    "created_at": "2026-07-23T11:46:29.631Z"
+  }
+},
+{
+  "model": "api.careerapplication",
+  "pk": 5,
+  "fields": {
+    "name": "Human",
+    "email": "human1@test.com",
+    "phone": "9222",
+    "role_applied": "Full-Stack Developer",
+    "state": "",
+    "district": "",
+    "portfolio_link": "",
+    "cover_letter": "",
+    "created_at": "2026-07-23T11:51:47.307Z"
+  }
+},
+{
+  "model": "api.careerapplication",
+  "pk": 6,
+  "fields": {
+    "name": "Test Captcha User",
+    "email": "validcaptcha@test.com",
+    "phone": "9444444444",
+    "role_applied": "Full-Stack Developer",
+    "state": "Maharashtra",
+    "district": "Mumbai",
+    "portfolio_link": "",
+    "cover_letter": "",
+    "created_at": "2026-07-23T12:04:34.275Z"
+  }
+},
+{
+  "model": "api.agencypartnerlead",
+  "pk": 1,
+  "fields": {
+    "company_name": "Nexus Media Labs",
+    "contact_person": "Rohan Sharma",
+    "whatsapp_number": "+91 9876543210",
+    "email": "rohan@nexusmedialabs.com",
+    "core_services": "Video Editing",
+    "portfolio_link": "https://nexusmedialabs.com",
+    "team_size": "5-15",
+    "proposal": "We specialize in high-retention Reels and YouTube longform video editing for tech brands.",
+    "created_at": "2026-07-23T12:12:58.858Z"
+  }
+},
+{
+  "model": "portfolio.service",
+  "pk": 1,
+  "fields": {
+    "title": "Web Development",
+    "slug": "web-development",
+    "short_description": "Lightning-fast, SEO-optimised websites built with Next.js and Django. From landing pages to complex web platforms.",
+    "icon_name": "Globe",
+    "order": 1,
+    "is_active": true,
+    "created_at": "2026-07-19T18:32:15.070Z"
+  }
+},
+{
+  "model": "portfolio.service",
+  "pk": 2,
+  "fields": {
+    "title": "UI / UX Design",
+    "slug": "ui-ux-design",
+    "short_description": "Figma-to-code pixel-perfect interfaces that convert visitors into customers. Design systems built for scale.",
+    "icon_name": "Paintbrush2",
+    "order": 2,
+    "is_active": true,
+    "created_at": "2026-07-19T18:32:15.093Z"
+  }
+},
+{
+  "model": "portfolio.service",
+  "pk": 3,
+  "fields": {
+    "title": "SaaS Development",
+    "slug": "saas-development",
+    "short_description": "End-to-end multi-tenant SaaS platforms with billing, auth, and admin. Scalable from day one.",
+    "icon_name": "Layers",
+    "order": 3,
+    "is_active": true,
+    "created_at": "2026-07-19T18:32:15.110Z"
+  }
+},
+{
+  "model": "portfolio.service",
+  "pk": 4,
+  "fields": {
+    "title": "AI Integrations",
+    "slug": "ai-integrations",
+    "short_description": "LLM APIs, recommendation engines, and AI-powered features woven seamlessly into your existing product.",
+    "icon_name": "Cpu",
+    "order": 4,
+    "is_active": true,
+    "created_at": "2026-07-19T18:32:15.128Z"
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 1,
+  "fields": {
+    "service": 1,
+    "tier_name": "Landing Page",
+    "price_string": "Starts at $299",
+    "features": [
+      "Single page design",
+      "Mobile responsive",
+      "SEO optimised",
+      "Contact form",
+      "2 revision rounds",
+      "5-day delivery"
+    ],
+    "delivery_time": "3-5 business days",
+    "is_featured": false,
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 2,
+  "fields": {
+    "service": 1,
+    "tier_name": "Small Business Website",
+    "price_string": "Starts at $599",
+    "features": [
+      "Up to 8 pages",
+      "CMS integration",
+      "Mobile responsive",
+      "SEO foundation",
+      "Blog/news section",
+      "Google Analytics",
+      "3 revision rounds"
+    ],
+    "delivery_time": "1-2 weeks",
+    "is_featured": true,
+    "order": 2
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 3,
+  "fields": {
+    "service": 1,
+    "tier_name": "E-Commerce Store",
+    "price_string": "Starts at $1,299",
+    "features": [
+      "Full product catalogue",
+      "Stripe / PayPal payments",
+      "Inventory management",
+      "Order dashboard",
+      "Mobile-first checkout",
+      "SEO & performance tuning",
+      "Unlimited revisions"
+    ],
+    "delivery_time": "3-4 weeks",
+    "is_featured": false,
+    "order": 3
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 4,
+  "fields": {
+    "service": 2,
+    "tier_name": "Brand Identity Kit",
+    "price_string": "Starts at $199",
+    "features": [
+      "Logo design",
+      "Colour palette",
+      "Typography system",
+      "Brand guidelines PDF",
+      "2 concept directions",
+      "3 revision rounds"
+    ],
+    "delivery_time": "3-5 business days",
+    "is_featured": false,
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 5,
+  "fields": {
+    "service": 2,
+    "tier_name": "UI Design System",
+    "price_string": "Starts at $499",
+    "features": [
+      "Full Figma component library",
+      "Design tokens",
+      "Mobile & desktop screens",
+      "Interactive prototype",
+      "Handoff-ready specs",
+      "Dark mode variant"
+    ],
+    "delivery_time": "1-2 weeks",
+    "is_featured": true,
+    "order": 2
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 6,
+  "fields": {
+    "service": 2,
+    "tier_name": "Full Product UX",
+    "price_string": "Starts at $899",
+    "features": [
+      "User research & personas",
+      "User journey mapping",
+      "Wireframes + hi-fi mockups",
+      "Usability testing",
+      "Design system",
+      "Developer handoff"
+    ],
+    "delivery_time": "3-5 weeks",
+    "is_featured": false,
+    "order": 3
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 7,
+  "fields": {
+    "service": 3,
+    "tier_name": "MVP Launch",
+    "price_string": "Starts at $1,999",
+    "features": [
+      "Core feature set",
+      "Auth (email + OAuth)",
+      "Stripe billing integration",
+      "Admin dashboard",
+      "REST API",
+      "Deployment on Vercel + Railway"
+    ],
+    "delivery_time": "4-6 weeks",
+    "is_featured": false,
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 8,
+  "fields": {
+    "service": 3,
+    "tier_name": "Growth Platform",
+    "price_string": "Starts at $3,499",
+    "features": [
+      "Everything in MVP",
+      "Multi-tenancy",
+      "Role-based access control",
+      "Usage-based billing",
+      "Analytics dashboard",
+      "Email notification system",
+      "CI/CD pipeline"
+    ],
+    "delivery_time": "6-10 weeks",
+    "is_featured": true,
+    "order": 2
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 9,
+  "fields": {
+    "service": 4,
+    "tier_name": "AI Feature Add-On",
+    "price_string": "Starts at $499",
+    "features": [
+      "Single AI feature (chatbot, summariser, classifier)",
+      "OpenAI / Gemini API integration",
+      "Prompt engineering",
+      "Rate limiting & cost controls",
+      "Streaming responses"
+    ],
+    "delivery_time": "1-2 weeks",
+    "is_featured": false,
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.servicetier",
+  "pk": 10,
+  "fields": {
+    "service": 4,
+    "tier_name": "AI-Powered Product",
+    "price_string": "Starts at $2,499",
+    "features": [
+      "Multi-feature AI layer",
+      "RAG pipeline with vector DB",
+      "Fine-tuning consultation",
+      "Custom embedding models",
+      "AI admin monitoring panel",
+      "Cost analytics dashboard"
+    ],
+    "delivery_time": "4-8 weeks",
+    "is_featured": true,
+    "order": 2
+  }
+}
+]
