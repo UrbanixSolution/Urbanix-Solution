@@ -4,6 +4,7 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FeedbackWidget from '@/components/FeedbackWidget'
+import ScrollRestoration from '@/components/ScrollRestoration'
 
 /* ── Serif Display — for headings ─────────────────────────────── */
 const playfair = Playfair_Display({
@@ -50,8 +51,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} scroll-smooth`}>
+    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <body className="bg-[#0b0f19] text-[#f5f5f7] font-sans antialiased overflow-x-hidden">
+        <ScrollRestoration />
         <Navbar />
         <main>{children}</main>
         <Footer />
