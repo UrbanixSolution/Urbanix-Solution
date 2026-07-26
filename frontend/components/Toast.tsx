@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertCircle, X, Info } from 'lucide-react'
 
@@ -17,6 +18,15 @@ export default function Toast({
   toast: ToastMessage | null
   onClose: () => void
 }) {
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        onClose()
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast, onClose])
+
   return (
     <AnimatePresence>
       {toast && (
@@ -25,7 +35,7 @@ export default function Toast({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed top-5 right-5 z-50 max-w-md w-full px-4 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-start gap-3 bg-[#0d1424]/95 border-[rgba(255,255,255,0.1)] text-white"
+          className="fixed top-20 right-4 sm:right-6 z-[100] mt-4 max-w-md w-full px-4 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-start gap-3 bg-[#0d1424]/95 border-[rgba(255,255,255,0.1)] text-white"
         >
           {toast.type === 'success' && (
             <div className="w-8 h-8 rounded-xl bg-[rgba(16,185,129,0.15)] border border-[rgba(16,185,129,0.3)] flex items-center justify-center text-[#10b981] shrink-0">
