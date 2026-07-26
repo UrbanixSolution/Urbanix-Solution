@@ -13,9 +13,7 @@ import {
   Users,
   TrendingUp,
   ShieldCheck,
-  CreditCard,
-  CheckCircle2,
-  Zap
+  CreditCard
 } from 'lucide-react'
 
 export default function PartnerProgramsSection() {
@@ -33,7 +31,7 @@ export default function PartnerProgramsSection() {
 
       <div className="section-wrap relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── 1. Urgency Banner ────────────────────────────────────────── */}
+        {/* ── 1. Urgency Banner (Only on Main Career / Talent Index Page) ── */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,7 +87,7 @@ export default function PartnerProgramsSection() {
             
             <div>
               {/* Badge & Icon Header */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.2)] group-hover:scale-110 group-hover:border-cyan-400 transition-all duration-300">
                   <GraduationCap size={28} />
                 </div>
@@ -98,10 +96,15 @@ export default function PartnerProgramsSection() {
                 </span>
               </div>
 
-              {/* Main Headline */}
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 group-hover:text-cyan-300 transition-colors leading-tight">
-                Stop building dummy projects. Start coding for real clients.
+              {/* Explicit Program Title */}
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Student Partner Program
               </h3>
+
+              {/* Main Catchy Headline */}
+              <h4 className="text-xl sm:text-2xl font-extrabold text-cyan-300 mb-3 group-hover:text-cyan-200 transition-colors leading-tight">
+                Stop building dummy projects. Start coding for real clients.
+              </h4>
 
               {/* Sub-headline */}
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-8 font-normal">
@@ -117,9 +120,9 @@ export default function PartnerProgramsSection() {
                     <Coins size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       💰 Earn While You Learn
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       Get paid per project. No fixed 9-to-5 hours, work whenever you are free.
                     </p>
@@ -132,9 +135,9 @@ export default function PartnerProgramsSection() {
                     <Rocket size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       🚀 Real-World Experience
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       Say goodbye to boring college assignments. Build live websites and apps that actual businesses use.
                     </p>
@@ -147,9 +150,9 @@ export default function PartnerProgramsSection() {
                     <Users size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       🤝 Exclusive Network
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       Work alongside top developers, get code reviews, and level up your skills 10x faster.
                     </p>
@@ -186,7 +189,7 @@ export default function PartnerProgramsSection() {
 
             <div>
               {/* Badge & Icon Header */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)] group-hover:scale-110 group-hover:border-blue-400 transition-all duration-300">
                   <Building2 size={28} />
                 </div>
@@ -195,10 +198,15 @@ export default function PartnerProgramsSection() {
                 </span>
               </div>
 
-              {/* Main Headline */}
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 group-hover:text-blue-300 transition-colors leading-tight">
-                Tired of hunting for clients? Let us bring the projects to you.
+              {/* Explicit Program Title */}
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Agency Partner Program
               </h3>
+
+              {/* Main Catchy Headline */}
+              <h4 className="text-xl sm:text-2xl font-extrabold text-blue-300 mb-3 group-hover:text-blue-200 transition-colors leading-tight">
+                Tired of hunting for clients? Let us bring the projects to you.
+              </h4>
 
               {/* Sub-headline */}
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-8 font-normal">
@@ -214,9 +222,9 @@ export default function PartnerProgramsSection() {
                     <TrendingUp size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       📈 Consistent Overflow Work
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       Get access to high-ticket, premium client projects delivered straight to your inbox.
                     </p>
@@ -229,9 +237,9 @@ export default function PartnerProgramsSection() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       🤫 100% White-Label
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       You build the magic behind the scenes. Complete privacy and professional collaboration.
                     </p>
@@ -244,9 +252,9 @@ export default function PartnerProgramsSection() {
                     <CreditCard size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
                       💸 Zero Client Friction
-                    </h4>
+                    </h5>
                     <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mt-0.5">
                       No more chasing clients for payments. We ensure prompt, milestone-based payouts.
                     </p>

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
-  GraduationCap, Laptop, Clock, Award, ArrowRight,
-  Coins, Rocket, Users, Sparkles
+  GraduationCap, ArrowRight,
+  Coins, Rocket, Users
 } from 'lucide-react'
 import CareerForm from '@/components/CareerForm'
 
@@ -68,21 +67,6 @@ export default function StudentPartnerPage() {
 
         <div className="section-wrap relative z-10 text-center max-w-4xl mx-auto">
           
-          {/* ── 1. Urgency Banner ──────────────────────────────────── */}
-          <div className="mb-8 max-w-2xl mx-auto">
-            <div className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-cyan-950/30 backdrop-blur-xl p-3.5 sm:p-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-              <div className="flex items-center justify-center gap-2.5 text-center">
-                <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
-                </span>
-                <p className="text-xs sm:text-sm font-medium text-cyan-300">
-                  🚀 <span className="font-bold text-white">Note:</span> We currently have <span className="text-cyan-400 font-extrabold underline underline-offset-4 decoration-cyan-500/50">3 active client projects</span> pending allocation. Applications are reviewed on a rolling basis.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Program Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[rgba(0,196,204,0.12)] border border-[rgba(0,196,204,0.3)] text-[#00c4cc] text-xs font-bold uppercase tracking-wider mb-6 shadow-[0_0_20px_rgba(0,196,204,0.2)]">
             <GraduationCap size={16} />
@@ -134,7 +118,7 @@ export default function StudentPartnerPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {STUDENT_BENEFITS.map(({ icon: Icon, color, title, description }) => (
+            {STUDENT_BENEFITS.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
                 className="group relative rounded-3xl border border-gray-800 bg-slate-900/60 p-8 hover:border-cyan-500/40 shadow-xl hover:shadow-[0_0_30px_rgba(0,196,204,0.15)] transition-all duration-300 flex flex-col justify-between"
