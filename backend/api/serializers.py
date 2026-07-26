@@ -89,8 +89,12 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return ''
+            # Fallback for relative paths if request is not in context
+            raw_url = obj.image.url
+            if raw_url.startsWith('/'):
+                return f"http://127.0.0.1:8000{raw_url}"
+            return raw_url
+        return obj.image_url or ''
 
 
 class ContactLeadSerializer(serializers.ModelSerializer):
@@ -219,6 +223,3 @@ class CallbackRequestSerializer(serializers.ModelSerializer):
         attrs['full_name'] = full_name
         attrs['phone_number'] = phone_number
         return attrs
-
-
-

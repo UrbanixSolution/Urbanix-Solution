@@ -24,6 +24,7 @@ const DUMMY_PROJECTS: Project[] = [
 export default function Portfolio() {
   const [projects, setProjects] = useState<Project[]>(DUMMY_PROJECTS)
   const [isLoading, setIsLoading] = useState(true)
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({})
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
@@ -73,6 +74,9 @@ export default function Portfolio() {
             projects.map((project) => {
               const rawImg = project.image_url_resolved || project.image_url || project.image || null
               const img = resolveImageUrl(rawImg)
+              const projectId = project.id
+              const hasImageError = Boolean(imageErrors[projectId])
+              const hasValidImg = Boolean(img && !hasImageError)
 
               return (
                 <motion.div
@@ -83,15 +87,16 @@ export default function Portfolio() {
                   id={`portfolio-card-${project.id}`}
                   className="card-dark group p-8 sm:p-10 border border-[rgba(255,255,255,0.08)] rounded-2xl relative overflow-hidden"
                 >
-                  {img && (
+                  {hasValidImg && (
                     <div className="relative w-full h-56 rounded-xl overflow-hidden mb-6 border border-[rgba(255,255,255,0.06)]">
                       <Image
-                        src={img}
+                        src={img!}
                         alt={project.title}
                         fill
+                        unoptimized={true}
                         sizes="(max-width: 768px) 100vw, 800px"
-                        loading="lazy"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={() => setImageErrors(prev => ({ ...prev, [projectId]: true }))}
                       />
                     </div>
                   )}

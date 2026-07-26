@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, ExternalLink, ArrowLeft, Tag, MessageCircle } from 'lucide-react'
+import { ArrowRight, ExternalLink, ArrowLeft, Tag } from 'lucide-react'
+import { resolveImageUrl } from '@/lib/api'
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -127,7 +128,7 @@ async function getSectorData(slug: string): Promise<{ category: Category; projec
           client_name: item.sector ? item.sector.toUpperCase() : '',
           category: { id: 1, name: staticSector?.name || slug, slug, description: '', project_count: rawList.length },
           tech_list: item.tech_tags || item.tech_list || [],
-          image_url_resolved: item.image_url || item.image || '',
+          image_url_resolved: resolveImageUrl(item.image_url_resolved || item.image_url || item.image) || '',
           live_url: item.live_link || item.live_url || '',
           is_featured: item.is_featured ?? true,
           short_description: item.short_description || item.description || '',
@@ -208,6 +209,7 @@ export async function generateMetadata({
 function ProjectCard({ project }: { project: Project }) {
   const targetUrl = project.live_url || (project as any).live_link || '#'
   const hasTargetUrl = Boolean(targetUrl && targetUrl !== '#')
+  const resolvedImg = resolveImageUrl(project.image_url_resolved)
 
   return (
     <article
@@ -234,13 +236,13 @@ function ProjectCard({ project }: { project: Project }) {
           title={`Visit ${project.title} live site`}
           className="relative h-48 bg-gradient-to-br from-[#1e293b] via-[#111827] to-[#0f172a] overflow-hidden flex items-center justify-center p-6 group/banner cursor-pointer"
         >
-          {project.image_url_resolved ? (
+          {resolvedImg ? (
             <Image
-              src={project.image_url_resolved}
+              src={resolvedImg}
               alt={project.title}
               fill
+              unoptimized={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              loading="lazy"
               className="object-cover opacity-80 group-hover/banner:opacity-100 group-hover/banner:scale-105 transition-all duration-500"
             />
           ) : (
@@ -253,13 +255,13 @@ function ProjectCard({ project }: { project: Project }) {
         </a>
       ) : (
         <div className="relative h-48 bg-gradient-to-br from-[#1e293b] via-[#111827] to-[#0f172a] overflow-hidden flex items-center justify-center p-6">
-          {project.image_url_resolved ? (
+          {resolvedImg ? (
             <Image
-              src={project.image_url_resolved}
+              src={resolvedImg}
               alt={project.title}
               fill
+              unoptimized={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              loading="lazy"
               className="object-cover opacity-80"
             />
           ) : (

@@ -50,6 +50,7 @@ const GRADIENT_BG: Record<number, string> = {
 export default function PortfolioShowcase() {
   const [projects, setProjects] = useState<ApiProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -154,13 +155,17 @@ export default function PortfolioShowcase() {
               const tags = project.tech_tags || []
               const rawImg = project.image_url_resolved || project.image_url || project.image || null
               const img = resolveImageUrl(rawImg)
+              const projectId = project.id || idx
+              const hasImageError = Boolean(imageErrors[projectId])
+              const hasValidImg = Boolean(img && !hasImageError)
+
               const sectorLabel = project.sector
                 ? project.sector.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
                 : 'Project'
 
               return (
                 <motion.div
-                  key={project.id || idx}
+                  key={projectId}
                   id={`portfolio-card-${project.id}`}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -170,14 +175,15 @@ export default function PortfolioShowcase() {
                   <div>
                     {/* Card Image / Screen Mockup */}
                     <div className={`relative w-full h-44 rounded-xl bg-gradient-to-br ${GRADIENT_BG[idx % 4]} overflow-hidden mb-5 border border-[rgba(255,255,255,0.06)]`}>
-                      {img ? (
+                      {hasValidImg ? (
                         <Image
-                          src={img}
+                          src={img!}
                           alt={project.title}
                           fill
+                          unoptimized={true}
                           sizes="(max-width: 640px) 320px, 420px"
-                          loading="lazy"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={() => setImageErrors(prev => ({ ...prev, [projectId]: true }))}
                         />
                       ) : (
                         <div className="absolute inset-0 p-4 flex flex-col justify-between">
@@ -189,7 +195,9 @@ export default function PortfolioShowcase() {
                               <div className="w-2 h-2 rounded-full bg-[#28c840]" />
                             </div>
                             <span className="text-[9px] text-[#8892a4] font-mono opacity-60">
-                              {project.live_link ? new URL(project.live_link).hostname : 'urbanixsolution.com'}
+                              {project.live_link && project.live_link.startsWith('http')
+                                ? new URL(project.live_link).hostname
+                                : 'urbanixsolution.com'}
                             </span>
                           </div>
 
@@ -253,7 +261,7 @@ export default function PortfolioShowcase() {
                       href={project.live_link || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex w-full items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[rgba(61,90,153,0.2)] hover:bg-[#2a3f6b] text-xs font-semibold text-white border border-[rgba(61,90,153,0.4)] transition-all duration-200 group-hover:border-[rgba(155,176,216,0.4)]"
+                      className="inline-flex w-full items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[rgba(61,90,153,0.2)] hover:bg-[#2a3f6b] text-xs font-semibold text-[#f5f5f7] border border-[rgba(61,90,153,0.4)] transition-all duration-200 group-hover:border-[rgba(155,176,216,0.4)]"
                     >
                       Visit Live Website
                       <ArrowUpRight size={14} />

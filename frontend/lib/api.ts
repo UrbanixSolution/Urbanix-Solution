@@ -9,21 +9,27 @@ export function getApiBase(): string {
 
 /**
  * Resolves relative Django media URLs (e.g., '/media/images/pic.jpg') to an absolute URL
- * pointing to the Django backend root server (e.g., 'http://localhost:8000/media/images/pic.jpg').
+ * pointing to the Django backend root server (e.g., 'https://urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net/media/images/pic.jpg').
  */
 export function resolveImageUrl(url?: string | null): string | null {
   if (!url || typeof url !== 'string') return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
+  
   // If already absolute (http:// or https://), return as-is
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
   }
-  const apiBase = getApiBase();
-  // Strip trailing '/api' from API base URL to obtain the root domain (e.g. http://localhost:8000)
-  const backendDomain = apiBase.replace(/\/api\/?$/, '');
-  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return `${backendDomain}${cleanPath}`;
+  
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'https://urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net/api';
+  const backendRoot = envUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
+  
+  // If image path starts with '/' or relative
+  if (trimmed.startsWith('/')) {
+    return `${backendRoot}${trimmed}`;
+  }
+  
+  return `${backendRoot}/${trimmed}`;
 }
 
 // ─────────────────────────────────────────────────────────────

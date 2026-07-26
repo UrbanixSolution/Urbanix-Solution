@@ -118,10 +118,12 @@ class ProjectListSerializer(serializers.ModelSerializer):
     def get_image_url_resolved(self, obj: Project) -> str:
         request = self.context.get('request')
         url = obj.get_image_url()
-        # Build absolute URL when serving uploaded files so the frontend
-        # doesn't need to know the backend's base URL.
-        if url and obj.image and request:
+        if not url:
+            return ''
+        if request and url.startswith('/'):
             return request.build_absolute_uri(url)
+        if url.startswith('/'):
+            return f"http://127.0.0.1:8000{url}"
         return url
 
 
@@ -171,6 +173,10 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_image_url_resolved(self, obj: Project) -> str:
         request = self.context.get('request')
         url = obj.get_image_url()
-        if url and obj.image and request:
+        if not url:
+            return ''
+        if request and url.startswith('/'):
             return request.build_absolute_uri(url)
+        if url.startswith('/'):
+            return f"http://127.0.0.1:8000{url}"
         return url
