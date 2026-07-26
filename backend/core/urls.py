@@ -43,5 +43,6 @@ urlpatterns = [
     path('api/', include('leads.urls')),
 ]
 
-if settings.DEBUG:
+# Always serve media files from MEDIA_ROOT during development & single-server setups
+if settings.DEBUG or settings.MEDIA_ROOT:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -7,6 +7,25 @@ export function getApiBase(): string {
   return envUrl.replace(/\/+$/, '');
 }
 
+/**
+ * Resolves relative Django media URLs (e.g., '/media/images/pic.jpg') to an absolute URL
+ * pointing to the Django backend root server (e.g., 'http://localhost:8000/media/images/pic.jpg').
+ */
+export function resolveImageUrl(url?: string | null): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  // If already absolute (http:// or https://), return as-is
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  const apiBase = getApiBase();
+  // Strip trailing '/api' from API base URL to obtain the root domain (e.g. http://localhost:8000)
+  const backendDomain = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${backendDomain}${cleanPath}`;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Lightweight in-memory cache (5-minute TTL)
 // Prevents redundant API round-trips when navigating between
@@ -81,6 +100,7 @@ export interface ApiProject {
   sector?: string;
   image?: string | null;
   image_url?: string | null;
+  image_url_resolved?: string | null;
   tech_tags?: string[];
   live_link?: string | null;
   is_featured?: boolean;

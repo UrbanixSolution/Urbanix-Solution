@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { fetchProjects, type ApiProject } from '@/lib/api'
+import { fetchProjects, resolveImageUrl, type ApiProject } from '@/lib/api'
 
 const FALLBACK_RECENT: ApiProject[] = [
   {
@@ -152,7 +152,8 @@ export default function PortfolioShowcase() {
           >
             {projects.map((project, idx) => {
               const tags = project.tech_tags || []
-              const img = project.image_url || project.image || null
+              const rawImg = project.image_url_resolved || project.image_url || project.image || null
+              const img = resolveImageUrl(rawImg)
               const sectorLabel = project.sector
                 ? project.sector.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
                 : 'Project'
