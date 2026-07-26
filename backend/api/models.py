@@ -185,8 +185,9 @@ class CareerApplication(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=30)
     role_applied = models.CharField(max_length=200, choices=ROLE_CHOICES, default='Full-Stack Developer')
-    state = models.CharField(max_length=100, blank=True, help_text="State e.g. Maharashtra, Bihar, Delhi")
-    district = models.CharField(max_length=100, blank=True, help_text="District/City e.g. Mumbai, Patna, Roorkee")
+    state = models.CharField(max_length=100, blank=True, help_text="State")
+    district = models.CharField(max_length=100, blank=True, help_text="District")
+    town = models.CharField(max_length=100, blank=True, help_text="Town or City")
     portfolio_link = models.URLField(max_length=500, blank=True)
     cover_letter = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -271,6 +272,9 @@ class AgencyPartnerLead(models.Model):
     core_services = models.CharField(max_length=100, choices=SERVICE_CHOICES, default='Video Editing')
     portfolio_link = models.URLField(max_length=500, help_text="Agency Website, Case Studies, or Drive Link")
     team_size = models.CharField(max_length=30, choices=TEAM_SIZE_CHOICES, default='1-5')
+    state = models.CharField(max_length=100, blank=True, help_text="State")
+    district = models.CharField(max_length=100, blank=True, help_text="District")
+    town = models.CharField(max_length=100, blank=True, help_text="Town or City")
     proposal = models.TextField(blank=True, help_text="Brief pitch or overflow capacity details")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -281,4 +285,24 @@ class AgencyPartnerLead(models.Model):
 
     def __str__(self):
         return f"{self.company_name} ({self.get_core_services_display()}) - {self.team_size} members"
+
+
+class CallbackRequest(models.Model):
+    full_name = models.CharField(max_length=200, help_text="Full Name of requestor")
+    phone_number = models.CharField(max_length=30, help_text="Phone or WhatsApp number")
+    state = models.CharField(max_length=100, blank=True, help_text="State")
+    district = models.CharField(max_length=100, blank=True, help_text="District")
+    town = models.CharField(max_length=100, blank=True, help_text="Town or City")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_completed = models.BooleanField(default=False, help_text="Check when callback has been completed")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Callback Request"
+        verbose_name_plural = "Callback Requests"
+
+    def __str__(self):
+        return f"Callback Request from {self.full_name} ({self.phone_number}) - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+
 

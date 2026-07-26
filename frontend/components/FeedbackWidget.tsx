@@ -67,12 +67,12 @@ export default function FeedbackWidget() {
         id="feedback-fab-btn"
         onClick={() => setIsOpen(true)}
         aria-label="Report Bug or Feedback"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#111827] text-white border border-[rgba(0,196,204,0.4)] shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(0,196,204,0.2)] hover:border-[#00c4cc] hover:shadow-[0_0_25px_rgba(0,196,204,0.4)] hover:scale-105 transition-all duration-300 group"
+        className="fixed bottom-6 right-6 z-40 group flex items-center justify-center h-12 w-12 hover:w-auto hover:px-4 rounded-full bg-[#111827] text-white border border-[rgba(0,196,204,0.4)] shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(0,196,204,0.2)] hover:border-[#00c4cc] hover:shadow-[0_0_25px_rgba(0,196,204,0.4)] transition-all duration-300 ease-out overflow-hidden"
       >
-        <div className="w-8 h-8 rounded-full bg-[rgba(0,196,204,0.15)] flex items-center justify-center text-[#00c4cc] group-hover:scale-110 transition-transform">
+        <div className="w-8 h-8 rounded-full bg-[rgba(0,196,204,0.15)] flex items-center justify-center text-[#00c4cc] shrink-0 group-hover:scale-105 transition-transform duration-200">
           <Bug size={18} />
         </div>
-        <span className="text-xs font-bold tracking-wide text-slate-200 group-hover:text-white hidden sm:inline">
+        <span className="text-xs font-bold tracking-wide text-slate-200 group-hover:text-white whitespace-nowrap opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-[200px] group-hover:ml-2.5 transition-all duration-300 ease-out">
           Report Bug / Feedback
         </span>
       </button>

@@ -406,10 +406,10 @@ export default function Navbar() {
               <Link
                 href="/contact"
                 id="nav-cta"
-                className="btn-solid text-xs py-2 px-3.5 rounded-lg shadow-sm"
+                className="btn-solid text-sm font-medium px-5 py-2 rounded-full flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 tracking-wide"
               >
                 Book a Consultation
-                <ArrowRight size={12} />
+                <ArrowRight size={13} />
               </Link>
             </div>
 

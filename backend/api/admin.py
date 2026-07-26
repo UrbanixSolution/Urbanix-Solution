@@ -17,6 +17,7 @@ from .models import (
     WebsiteFeedback,
     PricingTier,
     AgencyPartnerLead,
+    CallbackRequest,
 )
 
 
@@ -273,9 +274,9 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
     actions = [approve_and_hire]
 
-    list_display  = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'hire_badge', 'created_at']
+    list_display  = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'town', 'hire_badge', 'created_at']
     list_filter   = ['is_converted', 'state', 'role_applied', 'created_at']
-    search_fields = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'cover_letter']
+    search_fields = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'town', 'cover_letter']
     ordering      = ['-created_at']
     readonly_fields = ['created_at', 'is_converted']
 
@@ -284,7 +285,7 @@ class CareerApplicationAdmin(admin.ModelAdmin):
             'fields': ('name', 'email', 'phone'),
         }),
         ('Application', {
-            'fields': ('role_applied', 'state', 'district', 'portfolio_link', 'cover_letter', 'created_at'),
+            'fields': ('role_applied', 'state', 'district', 'town', 'portfolio_link', 'cover_letter', 'created_at'),
         }),
         ('CRM Pipeline Status', {
             'fields': ('is_converted',),
@@ -323,8 +324,20 @@ class WebsiteFeedbackAdmin(admin.ModelAdmin):
 
 @admin.register(AgencyPartnerLead)
 class AgencyPartnerLeadAdmin(admin.ModelAdmin):
-    list_display = ['company_name', 'contact_person', 'core_services', 'whatsapp_number', 'team_size', 'created_at']
-    list_filter = ['core_services', 'team_size', 'created_at']
-    search_fields = ['company_name', 'contact_person', 'email', 'whatsapp_number', 'proposal']
+    list_display = ['company_name', 'contact_person', 'core_services', 'state', 'district', 'town', 'whatsapp_number', 'team_size', 'created_at']
+    list_filter = ['core_services', 'team_size', 'state', 'created_at']
+    search_fields = ['company_name', 'contact_person', 'email', 'whatsapp_number', 'state', 'district', 'town', 'proposal']
     ordering = ['-created_at']
     readonly_fields = ['created_at']
+
+
+@admin.register(CallbackRequest)
+class CallbackRequestAdmin(admin.ModelAdmin):
+    list_display = ['full_name', 'phone_number', 'state', 'district', 'town', 'is_completed', 'created_at']
+    list_filter = ['is_completed', 'state', 'created_at']
+    list_editable = ['is_completed']
+    search_fields = ['full_name', 'phone_number', 'state', 'district', 'town']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at']
+
+

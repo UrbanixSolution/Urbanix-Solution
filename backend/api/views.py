@@ -10,7 +10,7 @@ from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from django.db.models import Q
-from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, AgencyPartnerLead
+from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, AgencyPartnerLead, CallbackRequest
 from .serializers import (
     ServiceSerializer,
     CategorySerializer,
@@ -19,6 +19,7 @@ from .serializers import (
     CareerApplicationSerializer,
     WebsiteFeedbackSerializer,
     AgencyPartnerLeadSerializer,
+    CallbackRequestSerializer,
 )
 
 
@@ -247,4 +248,16 @@ class AgencyPartnerLeadCreateView(generics.CreateAPIView):
                 )
 
         return super().create(request, *args, **kwargs)
+
+
+class CallbackRequestCreateView(generics.CreateAPIView):
+    """
+    POST /api/callback/
+    Saves quick callback requests containing name and phone.
+    """
+    queryset = CallbackRequest.objects.all()
+    serializer_class = CallbackRequestSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ContactSubmissionThrottle]
+
 

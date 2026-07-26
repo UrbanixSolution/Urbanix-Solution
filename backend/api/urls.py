@@ -9,6 +9,7 @@ from .views import (
     WebsiteFeedbackCreateView,
     CaptchaGenerateView,
     AgencyPartnerLeadCreateView,
+    CallbackRequestCreateView,
 )
 
 router = DefaultRouter()
@@ -20,6 +21,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('captcha/', CaptchaGenerateView.as_view(), name='api-captcha'),
     path('contact/', ContactLeadCreateView.as_view(), name='api-contact'),
+    path('callback/', CallbackRequestCreateView.as_view(), name='api-callback'),
     path('career/', CareerApplicationCreateView.as_view(), name='api-career'),
     path('agency-partner/', AgencyPartnerLeadCreateView.as_view(), name='api-agency-partner'),
     path('feedback/', WebsiteFeedbackCreateView.as_view(), name='api-feedback'),

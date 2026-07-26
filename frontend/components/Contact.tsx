@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { motion, useInView } from 'framer-motion'
-import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle, Phone } from 'lucide-react'
-import { submitContactForm, type ContactPayload } from '@/lib/api'
+import { useRef, useState, useEffect, useCallback } from 'react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle, Phone, RotateCw, ShieldAlert, AlertTriangle, X } from 'lucide-react'
+import { submitContactForm, submitCallbackForm, fetchCaptcha, type ContactPayload } from '@/lib/api'
 
 const SERVICE_OPTIONS = [
   { value: 'business-websites', label: 'Business Websites' },
@@ -37,9 +37,91 @@ export default function Contact() {
     service_interested: 'business-websites',
     message: '',
   })
+
+  // Callback Modal State
+  const [isCallbackModalOpen, setIsCallbackModalOpen] = useState(false)
+  const [callbackForm, setCallbackForm] = useState({ name: '', phone: '', state: '', district: '', town: '' })
+  const [isCallbackSubmitting, setIsCallbackSubmitting] = useState(false)
+  const [callbackError, setCallbackError] = useState('')
+  const [callbackSuccess, setCallbackSuccess] = useState('')
+
+  // Self-Hosted Text CAPTCHA State
+  const [captchaImage, setCaptchaImage] = useState<string>('')
+  const [captchaId, setCaptchaId] = useState<string>('')
+  const [captchaInput, setCaptchaInput] = useState<string>('')
+  const [captchaLoading, setCaptchaLoading] = useState<boolean>(false)
+  const [captchaError, setCaptchaError] = useState<boolean>(false)
+
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [toast, setToast] = useState<ToastMessage | null>(null)
+
+  const handleCallbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!callbackForm.name.trim() || !callbackForm.phone.trim()) {
+      setCallbackError('Please enter both your name and phone number.')
+      return
+    }
+
+    setIsCallbackSubmitting(true)
+    setCallbackError('')
+
+    try {
+      const res = await submitCallbackForm({
+        name: callbackForm.name.trim(),
+        phone: callbackForm.phone.trim(),
+        state: callbackForm.state.trim(),
+        district: callbackForm.district.trim(),
+        town: callbackForm.town.trim(),
+      })
+
+      if (res.success) {
+        setCallbackSuccess('Callback request submitted successfully!')
+        setToast({
+          id: Date.now().toString(),
+          type: 'success',
+          title: 'Callback Requested!',
+          message: 'Our team will call you back within operating hours.',
+        })
+        setCallbackForm({ name: '', phone: '', state: '', district: '', town: '' })
+        setTimeout(() => {
+          setCallbackSuccess('')
+          setIsCallbackModalOpen(false)
+        }, 2000)
+      } else {
+        setCallbackError(res.error || 'Failed to submit callback request.')
+      }
+    } catch (err: any) {
+      setCallbackError(err?.message || 'Connection error. Please try again.')
+    } finally {
+      setIsCallbackSubmitting(false)
+    }
+  }
+
+  const loadCaptcha = useCallback(async () => {
+    setCaptchaLoading(true)
+    setCaptchaError(false)
+    try {
+      const res = await fetchCaptcha()
+      if (res && res.image_base64) {
+        setCaptchaId(res.captcha_id)
+        setCaptchaImage(res.image_base64)
+        setCaptchaInput('')
+        setCaptchaError(false)
+      } else {
+        setCaptchaError(true)
+      }
+    } catch (err) {
+      console.error('Failed to load CAPTCHA:', err)
+      setCaptchaError(true)
+    } finally {
+      setCaptchaLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCaptcha()
+  }, [loadCaptcha])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -47,10 +129,25 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (captchaError || !captchaImage) {
+      setErrorMsg('Failed to load CAPTCHA. Please click retry to generate a new CAPTCHA.')
+      return
+    }
+
+    if (!captchaInput.trim()) {
+      setErrorMsg('Please enter the CAPTCHA text shown in the image.')
+      return
+    }
+
     setStatus('loading')
     setErrorMsg('')
     try {
-      const result = await submitContactForm(form)
+      const result = await submitContactForm({
+        ...form,
+        captcha_id: captchaId,
+        captcha_input: captchaInput,
+      })
       if (result.success) {
         setStatus('success')
         setToast({
@@ -88,6 +185,8 @@ export default function Contact() {
         title: 'Connection Error',
         message: msg,
       })
+    } finally {
+      loadCaptcha()
     }
   }
 
@@ -154,13 +253,14 @@ export default function Contact() {
                   </div>
                 </a>
 
-                <a
-                  href={`tel:+${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '917631428236'}`}
+                <button
+                  type="button"
+                  onClick={() => setIsCallbackModalOpen(true)}
                   id="contact-phone-link"
-                  className="flex items-center gap-3 p-4 rounded-xl
+                  className="w-full flex items-center gap-3 p-4 rounded-xl text-left
                              bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]
                              text-[#8892a4] hover:text-white hover:border-[rgba(255,255,255,0.1)]
-                             transition-colors duration-200 group"
+                             transition-colors duration-200 group cursor-pointer"
                 >
                   <Phone size={17} className="text-[#9ab0d8]" />
                   <div>
@@ -169,7 +269,7 @@ export default function Contact() {
                     </div>
                     <div className="text-[11px] text-[#4a5568]">Mon – Sat · 10am – 7pm IST</div>
                   </div>
-                </a>
+                </button>
               </div>
             </motion.div>
 
@@ -226,7 +326,7 @@ export default function Contact() {
                         required
                         value={form.name}
                         onChange={handleChange}
-                        placeholder="e.g. John Doe"
+                        placeholder="Enter your full name"
                         className="form-input"
                       />
                     </div>
@@ -264,7 +364,7 @@ export default function Contact() {
                       required
                       value={form.email}
                       onChange={handleChange}
-                      placeholder="john@example.com"
+                      placeholder="Enter your email address"
                       className="form-input"
                     />
                   </div>
@@ -310,6 +410,67 @@ export default function Contact() {
                     />
                   </div>
 
+                  {/* Self-Hosted Text CAPTCHA Widget */}
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
+                    <label className="block text-[11px] font-medium text-[#4a5568] uppercase tracking-wide">
+                      Human Verification CAPTCHA <span className="text-red-400">*</span>
+                    </label>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      {/* Image Display, Loading Spinner, or Retry Fallback */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {captchaLoading ? (
+                          <div className="h-12 w-[180px] shrink-0 rounded-lg border border-slate-800 bg-[#080c14] animate-pulse flex items-center justify-center text-xs text-slate-500">
+                            Loading CAPTCHA...
+                          </div>
+                        ) : captchaError || !captchaImage ? (
+                          <div className="h-12 w-[180px] shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-2 flex items-center justify-between gap-1 text-[11px] font-semibold text-red-400">
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle size={13} className="shrink-0" />
+                              Failed
+                            </span>
+                            <button
+                              type="button"
+                              onClick={loadCaptcha}
+                              className="px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-white text-[10px] font-bold uppercase transition-colors shrink-0"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        ) : (
+                          <img
+                            src={captchaImage}
+                            alt="Security CAPTCHA"
+                            className="h-12 w-[180px] shrink-0 rounded-lg border border-slate-700 bg-[#0d1320] px-2 py-1 select-none object-fill shadow-inner"
+                          />
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={loadCaptcha}
+                          disabled={captchaLoading}
+                          title="Generate new CAPTCHA"
+                          className="h-11 w-11 rounded-lg border border-slate-700 bg-[#080c14] hover:bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white transition-colors shrink-0"
+                        >
+                          <RotateCw size={16} className={captchaLoading ? 'animate-spin' : ''} />
+                        </button>
+                      </div>
+
+                      {/* Character Input */}
+                      <input
+                        type="text"
+                        id="contactCaptchaInput"
+                        required
+                        disabled={captchaError || !captchaImage}
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
+                        maxLength={6}
+                        placeholder={captchaError ? 'Click Retry on left' : 'Enter characters'}
+                        className="flex-1 form-input font-mono uppercase tracking-widest placeholder:normal-case placeholder:font-sans placeholder-[#4a5568] focus:outline-none transition-colors disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+
                   {status === 'error' && (
                     <motion.div
                       initial={{ opacity: 0, y: -6 }}
@@ -326,7 +487,7 @@ export default function Contact() {
 
                   <button
                     type="submit"
-                    disabled={status === 'loading'}
+                    disabled={status === 'loading' || !captchaInput.trim() || captchaError || !captchaImage}
                     id="contact-submit-btn"
                     className="w-full btn-solid justify-center py-3 text-[13px]
                                disabled:opacity-50 disabled:cursor-not-allowed"
@@ -351,6 +512,179 @@ export default function Contact() {
           </div>
         </div>
       </div>
+
+      {/* ── Callback Request Popup Modal ──────────────────────────── */}
+      <AnimatePresence>
+        {isCallbackModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            {/* Dark Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCallbackModalOpen(false)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            />
+
+            {/* Centered Modal Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full max-w-md rounded-3xl bg-[#111827] border border-slate-800 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_30px_rgba(61,90,153,0.15)] p-6 sm:p-8 z-10 text-left overflow-hidden"
+            >
+              {/* Top Accent Glow */}
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#3d5a99] to-transparent" />
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setIsCallbackModalOpen(false)}
+                className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-2xl bg-[rgba(61,90,153,0.15)] border border-[rgba(61,90,153,0.3)] text-[#9ab0d8] flex items-center justify-center shrink-0">
+                  <Phone size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">
+                    Request a Callback
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    We will call you back within 10am – 7pm IST.
+                  </p>
+                </div>
+              </div>
+
+              {callbackSuccess ? (
+                <div className="py-6 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <h4 className="text-sm font-semibold text-white">{callbackSuccess}</h4>
+                  <p className="text-xs text-slate-400">Closing window...</p>
+                </div>
+              ) : (
+                <form onSubmit={handleCallbackSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="callback-name" className="block text-[11px] font-medium text-slate-300 mb-1.5 uppercase tracking-wide">
+                      Full Name *
+                    </label>
+                    <input
+                      id="callback-name"
+                      type="text"
+                      required
+                      value={callbackForm.name}
+                      onChange={(e) => setCallbackForm({ ...callbackForm, name: e.target.value })}
+                      placeholder="Enter your full name"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="callback-phone" className="block text-[11px] font-medium text-slate-300 mb-1.5 uppercase tracking-wide">
+                      Phone Number / WhatsApp *
+                    </label>
+                    <input
+                      id="callback-phone"
+                      type="tel"
+                      required
+                      value={callbackForm.phone}
+                      onChange={(e) => setCallbackForm({ ...callbackForm, phone: e.target.value })}
+                      placeholder="Enter your phone or WhatsApp number"
+                      className="form-input"
+                    />
+                  </div>
+
+                  {/* Geolocation Fields: State, District, Town */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label htmlFor="callback-state" className="block text-[11px] font-medium text-slate-300 mb-1.5 uppercase tracking-wide">
+                        State *
+                      </label>
+                      <input
+                        id="callback-state"
+                        type="text"
+                        required
+                        value={callbackForm.state}
+                        onChange={(e) => setCallbackForm({ ...callbackForm, state: e.target.value })}
+                        placeholder="Enter your state"
+                        className="form-input text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="callback-district" className="block text-[11px] font-medium text-slate-300 mb-1.5 uppercase tracking-wide">
+                        District *
+                      </label>
+                      <input
+                        id="callback-district"
+                        type="text"
+                        required
+                        value={callbackForm.district}
+                        onChange={(e) => setCallbackForm({ ...callbackForm, district: e.target.value })}
+                        placeholder="Enter your district"
+                        className="form-input text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="callback-town" className="block text-[11px] font-medium text-slate-300 mb-1.5 uppercase tracking-wide">
+                        Town / City *
+                      </label>
+                      <input
+                        id="callback-town"
+                        type="text"
+                        required
+                        value={callbackForm.town}
+                        onChange={(e) => setCallbackForm({ ...callbackForm, town: e.target.value })}
+                        placeholder="Enter your town or city"
+                        className="form-input text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {callbackError && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle size={15} className="shrink-0" />
+                      <span>{callbackError}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCallbackModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isCallbackSubmitting}
+                      className="btn-solid py-2.5 px-5 text-xs font-semibold justify-center disabled:opacity-50"
+                    >
+                      {isCallbackSubmitting ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" /> Submitting...
+                        </>
+                      ) : (
+                        'Submit Callback Request'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

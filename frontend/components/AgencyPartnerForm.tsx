@@ -33,6 +33,9 @@ export default function AgencyPartnerForm() {
     email: '',
     coreServices: 'Video Editing',
     teamSize: '1-5',
+    state: '',
+    district: '',
+    town: '',
     portfolioLink: '',
     proposal: '',
   })
@@ -104,6 +107,9 @@ export default function AgencyPartnerForm() {
         email: formData.email,
         core_services: finalServices,
         team_size: formData.teamSize,
+        state: formData.state,
+        district: formData.district,
+        town: formData.town,
         portfolio_link: formData.portfolioLink,
         proposal: formData.proposal,
         captcha_id: captchaId,
@@ -125,6 +131,9 @@ export default function AgencyPartnerForm() {
           email: '',
           coreServices: 'Video Editing',
           teamSize: '1-5',
+          state: '',
+          district: '',
+          town: '',
           portfolioLink: '',
           proposal: '',
         })
@@ -218,7 +227,7 @@ export default function AgencyPartnerForm() {
                   required
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  placeholder="e.g. PixelCraft Media"
+                  placeholder="Enter your agency or company name"
                   className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                 />
               </div>
@@ -234,7 +243,7 @@ export default function AgencyPartnerForm() {
                   required
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                  placeholder="e.g. Vikramaditya Singh (Founder)"
+                  placeholder="Enter your full name"
                   className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                 />
               </div>
@@ -253,7 +262,7 @@ export default function AgencyPartnerForm() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="partners@youragency.com"
+                  placeholder="Enter your business email address"
                   className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                 />
               </div>
@@ -270,6 +279,57 @@ export default function AgencyPartnerForm() {
                   value={formData.whatsappNumber}
                   onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
                   placeholder="+91 98765 43210"
+                  className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Geolocation Fields: State, District, Town */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="state" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 size={13} className="text-[#60a5fa]" />
+                  State <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="state"
+                  required
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  placeholder="Enter your state"
+                  className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="district" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 size={13} className="text-[#60a5fa]" />
+                  District <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="district"
+                  required
+                  value={formData.district}
+                  onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                  placeholder="Enter your district"
+                  className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="town" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 size={13} className="text-[#60a5fa]" />
+                  Town / City <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="town"
+                  required
+                  value={formData.town}
+                  onChange={(e) => setFormData({ ...formData, town: e.target.value })}
+                  placeholder="Enter your town or city"
                   className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                 />
               </div>

@@ -33,6 +33,14 @@ export const metadata: Metadata = {
     'web app development',
     'startup tech partner',
   ],
+  icons: {
+    icon: [
+      { url: '/urbanix-logo.png', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    shortcut: '/urbanix-logo.png',
+    apple: '/urbanix-logo.png',
+  },
   openGraph: {
     title: 'Urbanix Solution — Premium Digital Products',
     description: 'From setup to monthly management — we handle the tech so you can focus on growth.',

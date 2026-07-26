@@ -2,7 +2,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
 from rest_framework import serializers
-from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead
+from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest
 
 
 class PricingTierSerializer(serializers.ModelSerializer):
@@ -118,6 +118,7 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
             'role_applied',
             'state',
             'district',
+            'town',
             'portfolio_link',
             'cover_letter',
             'created_at',
@@ -167,8 +168,57 @@ class AgencyPartnerLeadSerializer(serializers.ModelSerializer):
             'core_services',
             'portfolio_link',
             'team_size',
+            'state',
+            'district',
+            'town',
             'proposal',
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class CallbackRequestSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(write_only=True, required=False)
+    phone = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = CallbackRequest
+        fields = [
+            'id',
+            'full_name',
+            'phone_number',
+            'name',
+            'phone',
+            'state',
+            'district',
+            'town',
+            'is_completed',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'is_completed', 'created_at']
+
+    def validate(self, attrs):
+        if 'name' in attrs and not attrs.get('full_name'):
+            attrs['full_name'] = attrs.pop('name')
+        else:
+            attrs.pop('name', None)
+
+        if 'phone' in attrs and not attrs.get('phone_number'):
+            attrs['phone_number'] = attrs.pop('phone')
+        else:
+            attrs.pop('phone', None)
+
+        full_name = attrs.get('full_name', '').strip()
+        phone_number = attrs.get('phone_number', '').strip()
+
+        if not full_name:
+            raise serializers.ValidationError({"full_name": "Full name is required."})
+        if not phone_number:
+            raise serializers.ValidationError({"phone_number": "Phone number is required."})
+
+        attrs['full_name'] = full_name
+        attrs['phone_number'] = phone_number
+        return attrs
+
+
 

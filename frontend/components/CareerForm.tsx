@@ -80,6 +80,7 @@ export default function CareerForm() {
     otherRole: '',
     state: '',
     district: '',
+    town: '',
     portfolioUrl: '',
     motivation: '',
   })
@@ -148,6 +149,7 @@ export default function CareerForm() {
         role_applied: finalRole,
         state: formData.state,
         district: formData.district,
+        town: formData.town,
         portfolio_link: formData.portfolioUrl,
         cover_letter: formData.motivation,
         captcha_id: captchaId,
@@ -170,6 +172,7 @@ export default function CareerForm() {
           otherRole: '',
           state: '',
           district: '',
+          town: '',
           portfolioUrl: '',
           motivation: '',
         })
@@ -327,7 +330,7 @@ export default function CareerForm() {
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="e.g. Alex Morgan"
+                  placeholder="Enter your full name"
                   className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                 />
               </div>
@@ -344,7 +347,7 @@ export default function CareerForm() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="you@example.com"
+                    placeholder="Enter your email address"
                     className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                   />
                 </div>
@@ -359,7 +362,7 @@ export default function CareerForm() {
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="e.g. +91 98765 43210"
+                    placeholder="Enter your phone or WhatsApp number"
                     className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                   />
                 </div>
@@ -400,15 +403,15 @@ export default function CareerForm() {
                       required={formData.role === 'Other'}
                       value={formData.otherRole}
                       onChange={(e) => setFormData({ ...formData, otherRole: e.target.value })}
-                      placeholder="e.g. Cybersecurity Analyst, Motion Graphics, AI Engineer..."
+                      placeholder="Specify your primary skill or role"
                       className="w-full bg-[#080c14] border border-[#00c4cc]/40 focus:border-[#00c4cc] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                     />
                   </motion.div>
                 )}
               </div>
 
-              {/* Geolocation Fields: State & District */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Geolocation Fields: State, District, Town */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="state" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
                     <Building2 size={13} className="text-[#00c4cc]" />
@@ -420,7 +423,7 @@ export default function CareerForm() {
                     required
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="e.g. Maharashtra, Bihar, Delhi"
+                    placeholder="Enter your state"
                     className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                   />
                 </div>
@@ -428,7 +431,7 @@ export default function CareerForm() {
                 <div>
                   <label htmlFor="district" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin size={13} className="text-[#00c4cc]" />
-                    District / City <span className="text-red-400">*</span>
+                    District <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -436,7 +439,23 @@ export default function CareerForm() {
                     required
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="e.g. Mumbai, Patna, Roorkee"
+                    placeholder="Enter your district"
+                    className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="town" className="block text-xs font-semibold text-[#8892a4] mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin size={13} className="text-[#00c4cc]" />
+                    Town / City <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="town"
+                    required
+                    value={formData.town}
+                    onChange={(e) => setFormData({ ...formData, town: e.target.value })}
+                    placeholder="Enter your town or city"
                     className="w-full bg-[#080c14] border border-[rgba(255,255,255,0.08)] focus:border-[#3d5a99] rounded-xl px-4 py-3 text-sm text-white placeholder-[#4a5568] focus:outline-none transition-colors"
                   />
                 </div>

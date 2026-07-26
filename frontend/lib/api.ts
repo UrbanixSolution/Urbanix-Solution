@@ -100,6 +100,8 @@ export interface ContactPayload {
   phone: string;
   service_interested: string;
   message: string;
+  captcha_id?: string;
+  captcha_input?: string;
 }
 
 export interface CareerPayload {
@@ -109,6 +111,7 @@ export interface CareerPayload {
   role_applied: string;
   state?: string;
   district?: string;
+  town?: string;
   portfolio_link?: string;
   cover_letter?: string;
   captcha_id?: string;
@@ -123,9 +126,63 @@ export interface AgencyPartnerPayload {
   core_services: string;
   portfolio_link: string;
   team_size: string;
+  state?: string;
+  district?: string;
+  town?: string;
   proposal?: string;
   captcha_id?: string;
   captcha_input?: string;
+}
+
+export interface CallbackPayload {
+  full_name?: string;
+  phone_number?: string;
+  name?: string;
+  phone?: string;
+  state?: string;
+  district?: string;
+  town?: string;
+}
+
+/**
+ * Submit quick callback request to POST /api/callback/
+ */
+export async function submitCallbackForm(
+  payload: CallbackPayload
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const base = getApiBase();
+  const bodyData = {
+    full_name: payload.full_name || payload.name || '',
+    phone_number: payload.phone_number || payload.phone || '',
+    state: payload.state || '',
+    district: payload.district || '',
+    town: payload.town || '',
+  };
+  try {
+    const res = await fetch(`${base}/callback/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.detail ||
+          errData.phone_number?.[0] ||
+          errData.full_name?.[0] ||
+          errData.phone?.[0] ||
+          errData.name?.[0] ||
+          `Server returned ${res.status}`
+      );
+    }
+
+    const data = await res.json();
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('[API Submit Callback Error]:', error);
+    return { success: false, error: error.message || 'Failed to submit callback request.' };
+  }
 }
 
 /**

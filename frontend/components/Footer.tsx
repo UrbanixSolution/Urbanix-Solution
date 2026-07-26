@@ -124,8 +124,8 @@ export default function Footer() {
             © 2026 Urbanix Solution. All rights reserved.
           </p>
           <div className="flex gap-5">
-            <Link href="/contact" className="text-[12px] text-[#8892a4] hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/contact" className="text-[12px] text-[#8892a4] hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/privacy-policy" className="text-[12px] text-[#8892a4] hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms-of-service" className="text-[12px] text-[#8892a4] hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
