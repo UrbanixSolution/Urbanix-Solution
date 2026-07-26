@@ -1,41 +1,35 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  Zap, Award, Clock, DollarSign, ArrowRight,
-  GraduationCap, Laptop, ShieldCheck, Sparkles
+  GraduationCap, Laptop, Clock, Award, ArrowRight,
+  Coins, Rocket, Users, Sparkles
 } from 'lucide-react'
 import CareerForm from '@/components/CareerForm'
 
 export const metadata: Metadata = {
   title: 'Student Partner Program — Earn While You Learn | Urbanix Solution',
   description:
-    'Join our elite network of student developers, designers, and marketers. Build live client projects from your hostel room, earn project-based payouts, and build an unbeatable resume.',
+    'Stop building dummy projects. Start coding for real clients. Earn pocket money, build a killer portfolio, and get real-world industry experience right from your hostel room.',
 }
 
-const PERKS = [
+const STUDENT_BENEFITS = [
   {
-    icon: DollarSign,
-    color: '#10b981',
-    title: 'Project-Based Payouts',
-    description: 'Get paid directly upon project completion. No waiting for monthly cycles or stipend delays.',
+    icon: Coins,
+    color: 'emerald',
+    title: '💰 Earn While You Learn',
+    description: 'Get paid per project. No fixed 9-to-5 hours, work whenever you are free.',
   },
   {
-    icon: Laptop,
-    color: '#00c4cc',
-    title: 'Build Your Portfolio',
-    description: 'Work on actual live websites and apps. Add real client URLs to your GitHub, Figma, and resume.',
+    icon: Rocket,
+    color: 'cyan',
+    title: '🚀 Real-World Experience',
+    description: 'Say goodbye to boring college assignments. Build live websites and apps that actual businesses use.',
   },
   {
-    icon: Clock,
-    color: '#f59e0b',
-    title: '100% Flexible Hours',
-    description: 'Work around your college classes and exams. Take client projects only when you have free time.',
-  },
-  {
-    icon: Award,
-    color: '#a855f7',
-    title: 'Experience & Certificates',
-    description: 'Top performers receive official Internship Completion Certificates, LORs, and direct job recommendations.',
+    icon: Users,
+    color: 'purple',
+    title: '🤝 Exclusive Network',
+    description: 'Work alongside top developers, get code reviews, and level up your skills 10x faster.',
   },
 ]
 
@@ -62,44 +56,59 @@ export default function StudentPartnerPage() {
     <div className="pt-[68px] bg-[#0b0f19] min-h-screen text-[#f5f5f7]">
       
       {/* ── Hero Section ─────────────────────────────────────────── */}
-      <section className="relative pt-20 pb-16 md:pt-28 md:pb-24 overflow-hidden border-b border-slate-800/60">
+      <section className="relative pt-20 pb-16 md:pt-24 md:pb-20 overflow-hidden border-b border-slate-800/60">
         {/* Glow Effects */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0,196,204,0.12), transparent 70%)',
+            background: 'radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0,196,204,0.14), transparent 70%)',
           }}
         />
         <div className="absolute top-1/4 right-10 w-96 h-96 bg-[#3d5a99]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="section-wrap relative z-10 text-center max-w-4xl mx-auto">
-          {/* Badge */}
+          
+          {/* ── 1. Urgency Banner ──────────────────────────────────── */}
+          <div className="mb-8 max-w-2xl mx-auto">
+            <div className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-cyan-950/30 backdrop-blur-xl p-3.5 sm:p-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+              <div className="flex items-center justify-center gap-2.5 text-center">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+                </span>
+                <p className="text-xs sm:text-sm font-medium text-cyan-300">
+                  🚀 <span className="font-bold text-white">Note:</span> We currently have <span className="text-cyan-400 font-extrabold underline underline-offset-4 decoration-cyan-500/50">3 active client projects</span> pending allocation. Applications are reviewed on a rolling basis.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Program Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[rgba(0,196,204,0.12)] border border-[rgba(0,196,204,0.3)] text-[#00c4cc] text-xs font-bold uppercase tracking-wider mb-6 shadow-[0_0_20px_rgba(0,196,204,0.2)]">
             <GraduationCap size={16} />
             <span>Student Partner Program</span>
           </div>
 
-          {/* Headline */}
+          {/* Main Headline */}
           <h1 className="heading-serif text-4xl sm:text-6xl lg:text-7xl text-white mb-6 leading-tight">
-            Earn While You Learn.
-            <br />
-            <span className="heading-serif-italic text-[#00c4cc]">Build Live Projects</span> From Your Hostel Room.
+            Stop building dummy projects. <br />
+            <span className="heading-serif-italic text-[#00c4cc]">Start coding for real clients.</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-base sm:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-10">
-            Join our elite network of student developers, designers, and marketers. Work on real-world local business projects, earn pocket money, and build an unbeatable resume.
+          {/* Sub-headline */}
+          <p className="text-base sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10 font-normal">
+            Earn pocket money, build a killer portfolio, and get real-world industry experience right from your hostel room.
           </p>
 
           {/* CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="#apply-form-section"
-              id="hero-join-network-btn"
-              className="btn-solid py-3.5 px-8 text-sm font-bold tracking-wide shadow-[0_0_25px_rgba(0,196,204,0.3)]"
+              id="hero-apply-earn-learn-btn"
+              className="py-4 px-8 rounded-2xl bg-[#00c4cc] hover:bg-[#00a8af] text-[#0b0f19] text-base font-extrabold flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-[0_0_25px_rgba(0,196,204,0.35)]"
             >
-              <span>Join the Network</span>
-              <ArrowRight size={16} />
+              <span>Apply to Earn & Learn</span>
+              <ArrowRight size={18} />
             </a>
             <a
               href="#how-it-works"
@@ -111,39 +120,33 @@ export default function StudentPartnerPage() {
         </div>
       </section>
 
-      {/* ── Perks / Benefits Grid ───────────────────────────────── */}
-      <section className="section-py border-b border-slate-800/60">
+      {/* ── Core Student Benefits Section ──────────────────────── */}
+      <section className="section-py border-b border-slate-800/60 bg-slate-950/40">
         <div className="section-wrap">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="label-caps mb-3 text-[#00c4cc]">Why Join Us?</p>
             <h2 className="heading-serif text-3xl sm:text-4xl text-white">
-              Built For Ambitious <span className="heading-serif-italic">College Students</span>
+              Built For Ambitious <span className="heading-serif-italic">College Developers</span>
             </h2>
             <p className="text-sm text-slate-400 mt-2">
-              Everything you need to gain industry exposure without compromising your academic CGPA.
+              Everything you need to gain real industry exposure without compromising your grades.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PERKS.map(({ icon: Icon, color, title, description }) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {STUDENT_BENEFITS.map(({ icon: Icon, color, title, description }) => (
               <div
                 key={title}
-                className="card-dark p-7 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group"
+                className="group relative rounded-3xl border border-gray-800 bg-slate-900/60 p-8 hover:border-cyan-500/40 shadow-xl hover:shadow-[0_0_30px_rgba(0,196,204,0.15)] transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"
-                    style={{
-                      background: `color-mix(in srgb, ${color} 15%, transparent)`,
-                      border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-                    }}
-                  >
-                    <Icon size={22} style={{ color }} />
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-[#00c4cc] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Icon size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#00c4cc] transition-colors">
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-[#00c4cc] transition-colors">
                     {title}
                   </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-sm text-slate-400 leading-relaxed">
                     {description}
                   </p>
                 </div>
@@ -167,10 +170,10 @@ export default function StudentPartnerPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {TIMELINE_STEPS.map(({ step, title, description }, idx) => (
+            {TIMELINE_STEPS.map(({ step, title, description }) => (
               <div
                 key={step}
-                className="relative bg-[#0b0f19] p-8 rounded-2xl border border-slate-800 flex flex-col justify-between"
+                className="relative bg-[#0b0f19] p-8 rounded-2xl border border-slate-800 flex flex-col justify-between hover:border-cyan-500/30 transition-colors"
               >
                 <div className="text-3xl font-extrabold text-[#00c4cc] font-serif mb-4">
                   {step}
@@ -178,7 +181,7 @@ export default function StudentPartnerPage() {
                 <h3 className="text-xl font-bold text-white mb-3">
                   {title}
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
                   {description}
                 </p>
               </div>
