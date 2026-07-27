@@ -175,7 +175,7 @@ export default function ValueProposition() {
                       </div>
                     </div>
                     <div className="text-emerald-400 font-semibold flex items-center gap-1.5 pt-1">
-                      <span>✓ Ready: https://app.urbanixsolution.com</span>
+                      <span>✓ Ready: https://app.urbanixsolution.online</span>
                     </div>
                   </div>
                 )}

@@ -43,11 +43,14 @@ DEBUG = os.getenv('DEBUG') == 'True'
 # Default already includes the Azure App Service hostname so it works
 # even if the env var hasn't been set on the Azure dashboard yet.
 # Prod .env value:
-#   ALLOWED_HOSTS=urbanixsolution.com,www.urbanixsolution.com,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net
+#   ALLOWED_HOSTS=urbanixsolution.online,www.urbanixsolution.online,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net
 ALLOWED_HOSTS = [h.strip() for h in os.getenv(
     'ALLOWED_HOSTS',
     'localhost,127.0.0.1,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net'
-).split(',') if h.strip()]
+).split(',') if h.strip()] + [
+    'urbanixsolution.online',
+    'www.urbanixsolution.online',
+]
 
 # Ensure Django redirects /path to /path/ where needed (safe default).
 APPEND_SLASH = True
@@ -170,7 +173,10 @@ CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://127.0.0.1:3000',
     cast=Csv()
-)
+) + [
+    "https://urbanixsolution.online",
+    "https://www.urbanixsolution.online",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF trusted origins: must include every origin that POSTs to the API.
@@ -179,7 +185,10 @@ CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
     default='http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000',
     cast=Csv()
-)
+) + [
+    "https://urbanixsolution.online",
+    "https://www.urbanixsolution.online",
+]
 
 # ---------------------------------------------------------------------------
 # Security Headers — active only in production (DEBUG=False)

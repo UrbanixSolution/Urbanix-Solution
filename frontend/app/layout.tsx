@@ -23,16 +23,17 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Urbanix Solution — Premium Websites & Apps for Growing Businesses',
+  metadataBase: new URL('https://urbanixsolution.online'),
+  title: 'Urbanix Solution | Tech Growth Partner for Businesses',
   description:
-    'Urbanix Solution builds lightning-fast websites, web apps, and SaaS platforms for startups and enterprises. End-to-end managed tech with startup-friendly pricing.',
+    'Urbanix Solution helps local businesses and startups transition online with web development, automation, and complete technical support. We also empower a dynamic freelancer network.',
   keywords: [
-    'web development agency',
-    'SaaS development',
-    'Next.js agency',
-    'Django backend',
-    'web app development',
-    'startup tech partner',
+    'Urbanix Solution',
+    'Web Agency',
+    'Digital Tech Partner',
+    'Automation',
+    'Freelancer Network',
+    'Web Development',
   ],
   icons: {
     icon: [
@@ -43,9 +44,12 @@ export const metadata: Metadata = {
     apple: '/urbanix-logo.png',
   },
   openGraph: {
-    title: 'Urbanix Solution — Premium Digital Products',
-    description: 'From setup to monthly management — we handle the tech so you can focus on growth.',
+    title: 'Urbanix Solution | Tech Growth Partner',
+    description:
+      'Get your offline business online with our complete digital solutions, or join our exclusive freelancer talent network today.',
     type: 'website',
+    url: 'https://urbanixsolution.online',
+    images: ['/urbanix-logo.png'],
   },
 }
 

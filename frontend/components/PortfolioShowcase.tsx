@@ -197,7 +197,7 @@ export default function PortfolioShowcase() {
                             <span className="text-[9px] text-[#8892a4] font-mono opacity-60">
                               {project.live_link && project.live_link.startsWith('http')
                                 ? new URL(project.live_link).hostname
-                                : 'urbanixsolution.com'}
+                                : 'urbanixsolution.online'}
                             </span>
                           </div>
 
