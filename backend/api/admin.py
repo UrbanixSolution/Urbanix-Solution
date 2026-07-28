@@ -246,8 +246,19 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     is_converted=True
                 )
 
-                # Send Hired Email
-                send_hired_onboarding_email(obj.email, obj.name, obj.role_applied, employee_id, raw_password)
+                # Generate Token for Magic Link
+                from rest_framework.authtoken.models import Token
+                token_obj, _ = Token.objects.get_or_create(user=user)
+
+                # Send Hired Email with Magic Link
+                send_hired_onboarding_email(
+                    email=obj.email,
+                    name=obj.name,
+                    role_applied=obj.role_applied,
+                    employee_id=employee_id,
+                    raw_password=raw_password,
+                    magic_token=token_obj.key
+                )
                 messages.success(request, f"Account created and email sent successfully to {obj.email}!")
 
             except Exception as e:

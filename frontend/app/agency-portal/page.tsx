@@ -43,6 +43,35 @@ export default function AgencyPortalPage() {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
+  // Check URL query params for magic_token auto-login
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const magicToken = params.get('magic_token') || params.get('token');
+
+    if (magicToken) {
+      localStorage.setItem('auth_token', magicToken);
+      setIsLoadingData(true);
+
+      // Authenticate via Magic Login Endpoint
+      fetch(`http://127.0.0.1:8000/api/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Invalid or expired magic token.");
+        })
+        .then((data) => {
+          const empId = data.user?.employee_id || data.user?.username || 'URB-DEV';
+          localStorage.setItem('employee_id', empId);
+          handleLoginSuccess(empId, data);
+        })
+        .catch((err) => {
+          console.warn("Magic Token login failed:", err);
+          setIsLoadingData(false);
+        });
+    }
+  }, []);
+
   // Fetch Dashboard Data from Django Backend REST API
   const fetchDashboardData = async (employeeId: string) => {
     setIsLoadingData(true);
@@ -132,9 +161,11 @@ export default function AgencyPortalPage() {
         // Cinematic Loading Skeleton Screen
         <div className="min-h-screen bg-gray-950 flex flex-col justify-center items-center text-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-gray-950 text-2xl shadow-lg shadow-cyan-500/30 animate-pulse">
-              U
-            </div>
+            <img
+              src="/urbanix-logo.png"
+              alt="Urbanix Solution Logo"
+              className="w-12 h-12 object-contain rounded-xl shadow-lg shadow-cyan-500/30 animate-pulse border border-cyan-500/30"
+            />
             <div className="flex items-center gap-2 text-cyan-400 text-sm font-bold font-mono tracking-wider">
               <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
               <span>SYNCING URBANIX CRM DATA...</span>

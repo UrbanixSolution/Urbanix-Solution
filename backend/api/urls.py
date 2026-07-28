@@ -11,6 +11,7 @@ from .views import (
     AgencyPartnerLeadCreateView,
     CallbackRequestCreateView,
     AgencyLoginView,
+    MagicLoginView,
     DashboardDataView,
 )
 
@@ -22,6 +23,7 @@ router.register(r'projects', PortfolioProjectViewSet, basename='project')
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/login/', AgencyLoginView.as_view(), name='api-auth-login'),
+    path('auth/magic-login/', MagicLoginView.as_view(), name='api-auth-magic-login'),
     path('dashboard-data/', DashboardDataView.as_view(), name='api-dashboard-data'),
     path('me/', DashboardDataView.as_view(), name='api-me'),
     path('captcha/', CaptchaGenerateView.as_view(), name='api-captcha'),

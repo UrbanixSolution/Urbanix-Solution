@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, UserCheck, ShieldCheck, ArrowRight, Sparkles, KeyRound, AlertCircle } from 'lucide-react';
 
 interface LoginCardProps {
@@ -12,6 +12,34 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Auto-login via Magic Link URL Token if present
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const magicToken = params.get('magic_token') || params.get('token');
+
+    if (magicToken) {
+      setIsLoading(true);
+      fetch(`http://127.0.0.1:8000/api/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Invalid or expired magic link token.');
+        })
+        .then((data) => {
+          const empId = data.user?.employee_id || data.user?.username || 'URB-DEV';
+          localStorage.setItem('auth_token', magicToken);
+          localStorage.setItem('employee_id', empId);
+          setIsLoading(false);
+          onLoginSuccess(empId, data);
+        })
+        .catch((err) => {
+          setIsLoading(false);
+          setErrorMessage('Magic link token is invalid or expired. Please sign in manually.');
+        });
+    }
+  }, [onLoginSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +106,11 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
           </div>
           
           <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-gray-950 text-xl shadow-lg shadow-cyan-500/25">
-              U
-            </div>
+            <img
+              src="/urbanix-logo.png"
+              alt="Urbanix Solution Logo"
+              className="w-10 h-10 object-contain rounded-xl shadow-lg shadow-cyan-500/25 border border-cyan-500/30"
+            />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
               URBANIX <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">CRM</span>
             </h1>

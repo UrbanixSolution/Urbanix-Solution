@@ -18,25 +18,29 @@ logger = logging.getLogger(__name__)
 def generate_unique_employee_id(applicant_name, date_obj=None):
     """
     Generates a unique Employee ID in format: [First 4 letters Capitalized]/[DDMM]/[Sequential Number]
-    Example: Applicant "Rahul" hired on 28-07-2026 -> Rahu/2807/01
+    Example: Applicant "Rahul" hired on 28 July -> RAHU/2807/01
     """
-    clean_name = "".join(c for c in applicant_name if c.isalpha())
+    first_name = applicant_name.strip().split()[0] if applicant_name else "USER"
+    clean_name = "".join(c for c in first_name if c.isalpha())
     if not clean_name:
-        clean_name = "User"
-    name_part = clean_name[:4].capitalize()
+        clean_name = "USER"
+
+    name_part = (clean_name.upper() + "XXXX")[:4]
 
     target_date = date_obj or timezone.now()
     date_part = target_date.strftime("%d%m")
 
-    count = User.objects.count() + 1
+    prefix = f"{name_part}/{date_part}/"
+    existing_count = UserProfile.objects.filter(employee_id__startswith=prefix).count()
+    seq = existing_count + 1
 
     while True:
-        seq_part = str(count).zfill(2)
-        employee_id = f"{name_part}/{date_part}/{seq_part}"
+        seq_part = f"{seq:02d}"
+        employee_id = f"{prefix}{seq_part}"
 
         if not UserProfile.objects.filter(employee_id=employee_id).exists() and not User.objects.filter(username=employee_id).exists():
             return employee_id
-        count += 1
+        seq += 1
 
 
 def generate_secure_password(length=8):
@@ -160,14 +164,22 @@ def send_update_credentials_email(email, name, role, employee_id, new_password):
         raise e
 
 
-def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_password):
+from rest_framework.authtoken.models import Token
+
+
+def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_password, magic_token=None):
     """
-    Sends responsive HTML onboarding email to hired candidate.
+    Sends responsive HTML onboarding email to hired candidate with Magic Link.
     """
     print(f"Attempting to send email to: {email}")
     logger.info(f"Attempting to send email to: {email}")
 
-    login_url = "https://www.urbanixsolution.online/agency-portal"
+    base_portal_url = "https://www.urbanixsolution.online/agency-portal"
+    if magic_token:
+        login_url = f"{base_portal_url}?magic_token={magic_token}"
+    else:
+        login_url = base_portal_url
+
     subject = "Welcome to Urbanix Solution! You're Hired 🚀"
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
     to_email = [email]
@@ -349,8 +361,18 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                 is_converted=True
             )
 
+            # Generate Token for Magic Link
+            token_obj, _ = Token.objects.get_or_create(user=user)
+
             # Send Email
-            send_hired_onboarding_email(instance.email, instance.name, instance.role_applied, employee_id, raw_password)
+            send_hired_onboarding_email(
+                email=instance.email,
+                name=instance.name,
+                role_applied=instance.role_applied,
+                employee_id=employee_id,
+                raw_password=raw_password,
+                magic_token=token_obj.key
+            )
 
         except Exception as e:
             logger.exception(f"[HIRING AUTOMATION ERROR] Failed to process hired candidate {instance.email}: {e}")

@@ -321,6 +321,45 @@ class AgencyLoginView(APIView):
         })
 
 
+from rest_framework.authtoken.models import Token
+
+
+class MagicLoginView(APIView):
+    """
+    GET /api/auth/magic-login/?token=<magic_token>
+    Authenticates candidate via one-click Magic Link token from welcome email.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        token_key = (request.query_params.get('token') or request.query_params.get('magic_token') or '').strip()
+        if not token_key:
+            return Response({"detail": "Magic token parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = Token.objects.get(key=token_key)
+            user = token.user
+
+            profile, _ = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'employee_id': user.username,
+                    'role': 'Senior Developer',
+                    'department': 'Engineering',
+                }
+            )
+
+            serializer = UserProfileSerializer(profile)
+            return Response({
+                "message": "Magic link auto-login successful",
+                "token": token.key,
+                "user": serializer.data,
+                "permissions": serializer.data.get('permissions', {})
+            })
+        except Token.DoesNotExist:
+            return Response({"detail": "Invalid or expired magic token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
 class DashboardDataView(APIView):
     """
     GET /api/dashboard-data/
