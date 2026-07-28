@@ -181,6 +181,14 @@ class CareerApplication(models.Model):
         ('Data Entry / Virtual Assistant', 'Data Entry / Virtual Assistant'),
     ]
 
+    HIRE_STATUS_CHOICES = [
+        ('Pending', 'Pending Review'),
+        ('Reviewed', 'Reviewed'),
+        ('Interviewing', 'Interviewing'),
+        ('Hired', 'Hired'),
+        ('Rejected', 'Rejected'),
+    ]
+
     name = models.CharField(max_length=200)
     email = models.EmailField()
     phone = models.CharField(max_length=30)
@@ -191,6 +199,12 @@ class CareerApplication(models.Model):
     portfolio_link = models.URLField(max_length=500, blank=True)
     cover_letter = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    hire_status = models.CharField(
+        max_length=30,
+        choices=HIRE_STATUS_CHOICES,
+        default='Pending',
+        help_text="Application hiring pipeline status"
+    )
     is_converted = models.BooleanField(
         default=False,
         help_text='Tick when this applicant has been hired and added as a CRM Team Member.'
@@ -203,7 +217,47 @@ class CareerApplication(models.Model):
 
     def __str__(self):
         location_str = f" ({self.district}, {self.state})" if self.district and self.state else ""
-        return f"Application by {self.name} for {self.role_applied}{location_str}"
+        return f"Application by {self.name} for {self.role_applied}{location_str} [{self.hire_status}]"
+
+
+from django.contrib.auth.models import User
+
+class UserProfile(models.Model):
+    """
+    Extended user profile for Agency CRM Team Members containing Employee ID and RBAC permissions.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    employee_id = models.CharField(max_length=50, unique=True, help_text="Assigned Employee ID e.g. URB-DEV-001")
+    role = models.CharField(max_length=150, default='Team Member', help_text="e.g. Senior Video Editor, Tech Lead")
+    department = models.CharField(max_length=100, default='Production', help_text="e.g. Media Production, Engineering")
+    avatar_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        default='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
+    )
+    
+    # Dynamic RBAC Permissions
+    can_view_finance = models.BooleanField(
+        default=False,
+        help_text="If True, user can view P&L metrics, financial cards, and payouts ledger."
+    )
+    can_view_all_projects = models.BooleanField(
+        default=False,
+        help_text="If True, user sees all agency projects. If False, only assigned projects."
+    )
+    is_agency_admin = models.BooleanField(
+        default=False,
+        help_text="If True, user has full agency administrative access."
+    )
+
+    class Meta:
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+
+    def __str__(self):
+        return f"{self.user.get_full_name() or self.user.username} ({self.employee_id}) - {self.role}"
+
 
 
 class WebsiteFeedback(models.Model):

@@ -236,6 +236,10 @@ function DropdownPanel({
 export default function Navbar() {
   const pathname = usePathname()
 
+  if (pathname?.startsWith('/agency-portal')) {
+    return null
+  }
+
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string | null>(null)

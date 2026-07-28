@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { Instagram, Linkedin } from 'lucide-react'
 
 const FOOTER_COLUMNS = [
@@ -56,6 +57,11 @@ const SOCIALS = [
 ]
 
 export default function Footer() {
+  const pathname = usePathname()
+
+  if (pathname?.startsWith('/agency-portal')) {
+    return null
+  }
   return (
     <footer className="border-t border-[rgba(255,255,255,0.05)] bg-[#080c14] text-white">
       <div className="section-wrap py-14">

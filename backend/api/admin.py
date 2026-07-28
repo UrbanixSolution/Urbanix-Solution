@@ -18,7 +18,132 @@ from .models import (
     PricingTier,
     AgencyPartnerLead,
     CallbackRequest,
+    UserProfile,
 )
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    """
+    Admin view for User Profiles & RBAC Permissions.
+    Agency Admin can enable/disable financial access and administrative privileges per user.
+    """
+    list_display = ['employee_id', 'user_full_name', 'user_email', 'role', 'department', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin']
+    list_editable = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin']
+    list_filter = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin', 'department']
+    search_fields = ['employee_id', 'user__username', 'user__email', 'user__first_name', 'user__last_name', 'role']
+    ordering = ['employee_id']
+
+    @admin.display(description='User Name')
+    def user_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+    @admin.display(description='Email')
+    def user_email(self, obj):
+        return obj.user.email
+
+
+def approve_and_hire(modeladmin, request, queryset):
+    """
+    Admin Action: Hire selected CareerApplications as crm.TeamMember records.
+
+    For each selected application that has NOT already been converted:
+      - Creates a crm.TeamMember using the applicant's name and role.
+      - Sets standard_charge to 0.00 as a sensible placeholder (edit later).
+      - Marks the original api.CareerApplication as is_converted = True and hire_status = 'Hired'.
+
+    Already-converted applications are silently skipped (idempotent).
+    """
+    from crm.models import TeamMember
+
+    hired_count = 0
+    skipped_count = 0
+
+    for application in queryset:
+        if application.is_converted or application.hire_status == 'Hired':
+            skipped_count += 1
+            continue
+
+        TeamMember.objects.get_or_create(
+            name=application.name,
+            defaults={
+                'role': application.role_applied,
+                'is_freelancer': False,
+                'standard_charge': 0.00,
+                'average_rating': 5.0,
+                'total_tasks_completed': 0,
+            },
+        )
+
+        application.hire_status = 'Hired'
+        application.is_converted = True
+        application.save()
+        hired_count += 1
+
+    parts = []
+    if hired_count:
+        parts.append(f"{hired_count} applicant(s) hired as CRM Team Members")
+    if skipped_count:
+        parts.append(f"{skipped_count} already-hired applicant(s) skipped")
+
+    modeladmin.message_user(request, " | ".join(parts) if parts else "Nothing to process.")
+
+
+approve_and_hire.short_description = "Hire selected applicants -> CRM Team Members"
+
+
+@admin.register(CareerApplication)
+class CareerApplicationAdmin(admin.ModelAdmin):
+    """
+    Job applications pipeline.
+    Hired candidates are automatically excluded from the default changelist view.
+    """
+
+    actions = [approve_and_hire]
+
+    list_display  = ['name', 'email', 'phone', 'role_applied', 'hire_status', 'hire_badge', 'created_at']
+    list_editable = ['hire_status']
+    list_filter   = ['hire_status', 'is_converted', 'role_applied', 'created_at']
+    search_fields = ['name', 'email', 'phone', 'role_applied', 'cover_letter']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('Applicant Details', {
+            'fields': ('name', 'email', 'phone'),
+        }),
+        ('Application', {
+            'fields': ('role_applied', 'state', 'district', 'town', 'portfolio_link', 'cover_letter', 'created_at'),
+        }),
+        ('Hiring Pipeline Status', {
+            'fields': ('hire_status', 'is_converted'),
+            'description': 'Setting Hire Status to "Hired" automatically creates the Employee User Account and sends credentials via email.',
+        }),
+    )
+
+    def get_queryset(self, request):
+        """
+        OVERRIDE get_queryset:
+        Excludes candidates with hire_status == 'Hired' or is_converted == True
+        from the default changelist view unless explicitly filtered.
+        """
+        qs = super().get_queryset(request)
+        # Check if request parameters explicitly filter by hire_status or is_converted
+        is_filtering = any(k.startswith('hire_status') or k.startswith('is_converted') for k in request.GET.keys())
+        if not is_filtering:
+            qs = qs.exclude(hire_status='Hired').exclude(is_converted=True)
+        return qs
+
+    @admin.display(description='Status Badge', boolean=False)
+    def hire_badge(self, obj):
+        if obj.hire_status == 'Hired' or obj.is_converted:
+            return format_html('<span style="color:#007bff;font-weight:bold;background:#e6f0ff;padding:3px 8px;border-radius:4px;">Hired</span>')
+        elif obj.hire_status == 'Interviewing':
+            return format_html('<span style="color:#ffc107;font-weight:bold;background:#fff9e6;padding:3px 8px;border-radius:4px;">Interviewing</span>')
+        elif obj.hire_status == 'Rejected':
+            return format_html('<span style="color:#dc3545;font-weight:bold;background:#ffe6e6;padding:3px 8px;border-radius:4px;">Rejected</span>')
+        return format_html('<span style="color:#6c757d;background:#f8f9fa;padding:3px 8px;border-radius:4px;">Pending Review</span>')
+
 
 
 # ---------------------------------------------------------------------------
@@ -179,53 +304,6 @@ def convert_to_crm_client(modeladmin, request, queryset):
 convert_to_crm_client.short_description = "Convert selected leads -> CRM Clients"
 
 
-def approve_and_hire(modeladmin, request, queryset):
-    """
-    Admin Action: Hire selected CareerApplications as crm.TeamMember records.
-
-    For each selected application that has NOT already been converted:
-      - Creates a crm.TeamMember using the applicant's name and role.
-      - Sets standard_charge to 0.00 as a sensible placeholder (edit later).
-      - Marks the original api.CareerApplication as is_converted = True.
-
-    Already-converted applications are silently skipped (idempotent).
-    """
-    from crm.models import TeamMember
-
-    hired_count = 0
-    skipped_count = 0
-
-    for application in queryset:
-        if application.is_converted:
-            skipped_count += 1
-            continue
-
-        TeamMember.objects.get_or_create(
-            # Avoid creating duplicate team members for the same person.
-            name=application.name,
-            defaults={
-                'role': application.role_applied,
-                'is_freelancer': True,     # safe default — can be changed in CRM
-                'standard_charge': 0.00,  # placeholder — update in CRM after hiring
-                'average_rating': 0.0,
-                'total_tasks_completed': 0,
-            },
-        )
-
-        application.is_converted = True
-        application.save(update_fields=['is_converted'])
-        hired_count += 1
-
-    parts = []
-    if hired_count:
-        parts.append(f"{hired_count} applicant(s) hired as CRM Team Members")
-    if skipped_count:
-        parts.append(f"{skipped_count} already-hired applicant(s) skipped")
-
-    modeladmin.message_user(request, " | ".join(parts) if parts else "Nothing to process.")
-
-
-approve_and_hire.short_description = "Hire selected applicants -> CRM Team Members"
 
 
 # ---------------------------------------------------------------------------
@@ -264,40 +342,6 @@ class ContactLeadAdmin(admin.ModelAdmin):
         return format_html('<span style="color:#6c757d;">New</span>')
 
 
-# ---------------------------------------------------------------------------
-# Career Application Admin
-# ---------------------------------------------------------------------------
-
-@admin.register(CareerApplication)
-class CareerApplicationAdmin(admin.ModelAdmin):
-    """Raw job applications from the website. Use the action to hire into the CRM."""
-
-    actions = [approve_and_hire]
-
-    list_display  = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'town', 'hire_badge', 'created_at']
-    list_filter   = ['is_converted', 'state', 'role_applied', 'created_at']
-    search_fields = ['name', 'email', 'phone', 'role_applied', 'state', 'district', 'town', 'cover_letter']
-    ordering      = ['-created_at']
-    readonly_fields = ['created_at', 'is_converted']
-
-    fieldsets = (
-        ('Applicant Details', {
-            'fields': ('name', 'email', 'phone'),
-        }),
-        ('Application', {
-            'fields': ('role_applied', 'state', 'district', 'town', 'portfolio_link', 'cover_letter', 'created_at'),
-        }),
-        ('CRM Pipeline Status', {
-            'fields': ('is_converted',),
-            'description': 'Use the "Hire selected applicants -> CRM Team Members" action to promote this record.',
-        }),
-    )
-
-    @admin.display(description='Hire Status', boolean=False)
-    def hire_badge(self, obj):
-        if obj.is_converted:
-            return format_html('<span style="color:#007bff;font-weight:bold;">Hired</span>')
-        return format_html('<span style="color:#6c757d;">Pending Review</span>')
 
 
 # ---------------------------------------------------------------------------

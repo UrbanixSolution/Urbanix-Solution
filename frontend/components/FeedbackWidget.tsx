@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bug, X, Send, CheckCircle2, MessageSquare, AlertCircle, Loader2 } from 'lucide-react'
 import { submitFeedback } from '@/lib/api'
@@ -13,6 +14,11 @@ const FEEDBACK_TYPES = [
 ]
 
 export default function FeedbackWidget() {
+  const pathname = usePathname()
+
+  if (pathname?.startsWith('/agency-portal')) {
+    return null
+  }
   const [isOpen, setIsOpen] = useState(false)
   const [feedbackType, setFeedbackType] = useState('Bug Report')
   const [message, setMessage] = useState('')

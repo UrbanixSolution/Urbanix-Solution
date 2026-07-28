@@ -2,7 +2,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
 from rest_framework import serializers
-from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest
+from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest, UserProfile
 
 
 class PricingTierSerializer(serializers.ModelSerializer):
@@ -223,3 +223,36 @@ class CallbackRequestSerializer(serializers.ModelSerializer):
         attrs['full_name'] = full_name
         attrs['phone_number'] = phone_number
         return attrs
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'id',
+            'employee_id',
+            'username',
+            'name',
+            'email',
+            'role',
+            'department',
+            'avatar_url',
+            'permissions',
+        ]
+
+    def get_name(self, obj):
+        full_name = obj.user.get_full_name()
+        return full_name if full_name.strip() else obj.user.username
+
+    def get_permissions(self, obj):
+        return {
+            'is_admin': obj.is_agency_admin or obj.user.is_superuser,
+            'can_view_finance': obj.can_view_finance or obj.is_agency_admin or obj.user.is_superuser,
+            'can_view_all_projects': obj.can_view_all_projects or obj.is_agency_admin or obj.user.is_superuser,
+        }
+

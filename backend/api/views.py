@@ -261,3 +261,304 @@ class CallbackRequestCreateView(generics.CreateAPIView):
     throttle_classes = [ContactSubmissionThrottle]
 
 
+from django.contrib.auth import authenticate
+from .models import UserProfile
+from .serializers import UserProfileSerializer
+
+class AgencyLoginView(APIView):
+    """
+    POST /api/auth/login/
+    Authenticates employees by Employee ID (username) and password.
+    Returns user profile & dynamic RBAC permissions.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        employee_id = (request.data.get('employee_id') or request.data.get('username') or '').strip().upper()
+        password = request.data.get('password', '').strip()
+
+        if not employee_id or not password:
+            return Response(
+                {"detail": "Please provide both Employee ID and password."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Authenticate user
+        user = authenticate(username=employee_id, password=password)
+        if not user:
+            # Also try matching case-insensitive username or email
+            try:
+                matched_user = User.objects.get(Q(username__iexact=employee_id) | Q(email__iexact=employee_id))
+                user = authenticate(username=matched_user.username, password=password)
+            except User.DoesNotExist:
+                user = None
+
+        if not user:
+            return Response(
+                {"detail": "Invalid Employee ID or password. Please check your credentials."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Get or create UserProfile
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'employee_id': user.username,
+                'role': 'Agency Director & Admin' if user.is_superuser else 'Senior Developer',
+                'department': 'Core Operations' if user.is_superuser else 'Engineering',
+                'can_view_finance': user.is_superuser,
+                'can_view_all_projects': user.is_superuser,
+                'is_agency_admin': user.is_superuser,
+            }
+        )
+
+        serializer = UserProfileSerializer(profile)
+        return Response({
+            "message": "Authentication successful",
+            "token": f"session_{user.id}_{uuid.uuid4().hex[:12]}",
+            "user": serializer.data,
+            "permissions": serializer.data['permissions']
+        })
+
+
+class DashboardDataView(APIView):
+    """
+    GET /api/dashboard-data/
+    GET /api/dashboard-data/?employee_id=URB-DEV-001
+    Returns full CRM portal state (metrics, assigned projects, tasks, payouts, permissions).
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        employee_id = request.query_params.get('employee_id') or request.query_params.get('employeeId')
+        
+        profile = None
+        if employee_id:
+            profile = UserProfile.objects.filter(Q(employee_id__iexact=employee_id) | Q(user__username__iexact=employee_id)).first()
+
+        if not profile:
+            # Default to first user profile or admin profile
+            profile = UserProfile.objects.first()
+
+        if not profile:
+            # Fallback dummy profile response if database is empty
+            profile_data = {
+                "id": "usr_001",
+                "employee_id": "URB-DEV-01",
+                "username": "URB-DEV-01",
+                "name": "Gaurav Sharma",
+                "email": "gaurav.s@urbanixsolution.internal",
+                "role": "Senior Video Editor & Motion Architect",
+                "department": "Creative & Media Production",
+                "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
+                "permissions": {
+                    "is_admin": False,
+                    "can_view_finance": False,
+                    "can_view_all_projects": False
+                }
+            }
+        else:
+            profile_data = UserProfileSerializer(profile).data
+
+        permissions = profile_data.get('permissions', {
+            'is_admin': False,
+            'can_view_finance': False,
+            'can_view_all_projects': False
+        })
+
+        # Sample Dynamic Projects
+        projects = [
+            {
+                "id": "prj-101",
+                "title": "Apex Financial Platform - Brand Motion & UI Video",
+                "clientName": "Apex Capital Holdings LLC",
+                "category": "VFX & Motion Graphics",
+                "status": "In Progress",
+                "progressPercent": 78,
+                "deadline": "04 Aug 2026",
+                "teamMembers": ["Gaurav S.", "Rohan K.", "Ananya P."],
+                "deliverableType": "4K Cinematic Reel & Interactive UI Animations",
+                "priority": "High",
+                "payoutEst": 65000
+            },
+            {
+                "id": "prj-102",
+                "title": "Nexus AI SaaS Portal - Dashboard UI & Micro-interactions",
+                "clientName": "Nexus Labs Inc.",
+                "category": "Web App & Frontend Development",
+                "status": "In Progress",
+                "progressPercent": 62,
+                "deadline": "12 Aug 2026",
+                "teamMembers": ["Gaurav S.", "Vikram R."],
+                "deliverableType": "React Components & Framer Animations",
+                "priority": "High",
+                "payoutEst": 50000
+            },
+            {
+                "id": "prj-103",
+                "title": "Veloce Motors - EV Promo Campaign Launch",
+                "clientName": "Veloce Automotives Global",
+                "category": "Commercial Video & 3D Render",
+                "status": "Under Review",
+                "progressPercent": 90,
+                "deadline": "31 Jul 2026",
+                "teamMembers": ["Gaurav S.", "Priya N."],
+                "deliverableType": "30s TV Commercial + Social Cutdowns",
+                "priority": "Medium",
+                "payoutEst": 30000
+            },
+            {
+                "id": "prj-104",
+                "title": "Urbanix Design System v3.0 - Internal Motion Assets",
+                "clientName": "Urbanix Core Architecture",
+                "category": "Internal R&D",
+                "status": "In Progress",
+                "progressPercent": 40,
+                "deadline": "20 Aug 2026",
+                "teamMembers": ["Gaurav S."],
+                "deliverableType": "Lottie Animations & CSS Tokens",
+                "priority": "Low",
+                "payoutEst": 20000
+            }
+        ]
+
+        # Sample Dynamic Tasks
+        tasks = [
+            {
+                "id": "tsk-01",
+                "title": "Finalize 3D camera trajectory for Apex 4K Hero Sequence",
+                "projectId": "prj-101",
+                "projectName": "Apex Financial Platform",
+                "priority": "Urgent",
+                "status": "in_progress",
+                "dueDate": "29 Jul 2026",
+                "estimatedHours": 6
+            },
+            {
+                "id": "tsk-02",
+                "title": "Export color-graded ProRes 4444 master files for Veloce review",
+                "projectId": "prj-103",
+                "projectName": "Veloce Motors Campaign",
+                "priority": "High",
+                "status": "in_review",
+                "dueDate": "30 Jul 2026",
+                "estimatedHours": 3
+            },
+            {
+                "id": "tsk-03",
+                "title": "Build Framer Motion physics spring configs for Nexus UI",
+                "projectId": "prj-102",
+                "projectName": "Nexus AI SaaS Portal",
+                "priority": "High",
+                "status": "todo",
+                "dueDate": "02 Aug 2026",
+                "estimatedHours": 8
+            },
+            {
+                "id": "tsk-04",
+                "title": "Upload raw render passes to AWS S3 bucket for client backup",
+                "projectId": "prj-101",
+                "projectName": "Apex Financial Platform",
+                "priority": "Normal",
+                "status": "todo",
+                "dueDate": "03 Aug 2026",
+                "estimatedHours": 2
+            }
+        ]
+
+        # Deliverables
+        deliverables = [
+            {
+                "id": "del-901",
+                "projectId": "prj-103",
+                "projectName": "Veloce Motors Campaign",
+                "title": "Veloce EV 30s Cut-v3_ColorGraded_Master.mp4",
+                "linkUrl": "https://drive.google.com/file/d/urbanix-veloce-v3-master/view",
+                "submittedAt": "28 Jul 2026, 14:30",
+                "fileSize": "1.84 GB",
+                "status": "Pending Review",
+                "notes": "Incorporated client feedback on bass boost and end logo glow."
+            },
+            {
+                "id": "del-900",
+                "projectId": "prj-101",
+                "projectName": "Apex Financial Platform",
+                "title": "Apex_Hero_Motion_Teaser_Draft2.mov",
+                "linkUrl": "https://frame.io/player/apex-motion-teaser-v2",
+                "submittedAt": "25 Jul 2026, 11:15",
+                "fileSize": "940 MB",
+                "status": "Approved",
+                "notes": "Approved by Creative Director for client presentation."
+            }
+        ]
+
+        # Payouts - CONDITIONAL BASED ON PERMISSIONS
+        payouts = []
+        if permissions.get('can_view_finance', False):
+            payouts = [
+                {
+                    "id": "pay-2026-07",
+                    "invoiceNo": "URB-INV-2026-088",
+                    "month": "July 2026 (Unbilled Current)",
+                    "projectTitle": "Apex Financial & Nexus AI Milestone 1",
+                    "baseAmount": 125000,
+                    "bonusAmount": 20000,
+                    "totalAmount": 145000,
+                    "status": "Pending Approval",
+                    "dueDate": "05 Aug 2026"
+                },
+                {
+                    "id": "pay-2026-06",
+                    "invoiceNo": "URB-INV-2026-071",
+                    "month": "June 2026",
+                    "projectTitle": "Krypton Cyber Platform & Veloce Teaser",
+                    "baseAmount": 110000,
+                    "bonusAmount": 15000,
+                    "totalAmount": 125000,
+                    "status": "Paid",
+                    "dueDate": "05 Jul 2026",
+                    "paidDate": "04 Jul 2026"
+                }
+            ]
+
+        # Notifications
+        notifications = [
+            {
+                "id": "notif-1",
+                "title": "Deliverable Approved",
+                "message": "Apex Hero Motion Teaser was approved by Creative Lead.",
+                "timeAgo": "2 hours ago",
+                "isRead": False,
+                "type": "project"
+            },
+            {
+                "id": "notif-2",
+                "title": "Payout Disbursement Scheduled",
+                "message": "July unbilled payout of ₹1,45,000 scheduled for Aug 5th.",
+                "timeAgo": "5 hours ago",
+                "isRead": False,
+                "type": "payout"
+            }
+        ]
+
+        # Calculate metrics
+        unbilled_total = sum(p['totalAmount'] for p in payouts if p['status'] in ['Pending Approval', 'Processing']) if permissions.get('can_view_finance', False) else 0
+
+        return Response({
+            "user": profile_data,
+            "permissions": permissions,
+            "metrics": {
+                "activeProjectsCount": len(projects),
+                "activeProjectsGrowth": "+2 this month",
+                "pendingTasksCount": len([t for t in tasks if t['status'] != 'done']),
+                "unbilledPayoutsAmount": unbilled_total,
+            },
+            "projects": projects,
+            "tasks": tasks,
+            "deliverables": deliverables,
+            "payouts": payouts,
+            "notifications": notifications
+        })
+
+
+

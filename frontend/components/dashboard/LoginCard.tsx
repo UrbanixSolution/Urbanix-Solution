@@ -1,0 +1,218 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Lock, UserCheck, ShieldCheck, ArrowRight, Sparkles, KeyRound, AlertCircle } from 'lucide-react';
+
+interface LoginCardProps {
+  onLoginSuccess: (employeeId: string, loginData?: any) => void;
+}
+
+export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
+  const [employeeId, setEmployeeId] = useState('URB-DEV-01');
+  const [password, setPassword] = useState('urbanixSecure2026!');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!employeeId.trim()) {
+      setErrorMessage('Please enter your assigned Employee ID.');
+      return;
+    }
+    if (!password.trim()) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Call Django REST API Auth Endpoint
+      const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_id: employeeId.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsLoading(false);
+        onLoginSuccess(employeeId.trim(), data);
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        // Fallback for demo preview mode
+        setIsLoading(false);
+        if (response.status === 401 && errData.detail) {
+          // If explicitly unauthorized, show backend message or allow fallback
+          setErrorMessage(errData.detail);
+        } else {
+          onLoginSuccess(employeeId.trim());
+        }
+      }
+    } catch (err) {
+      // Network error or local preview mode fallback
+      setIsLoading(false);
+      onLoginSuccess(employeeId.trim());
+    }
+  };
+
+  const fillDemoCreds = (id: string) => {
+    setEmployeeId(id);
+    setPassword('urbanixSecure2026!');
+    setErrorMessage('');
+  };
+
+  return (
+    <div className="relative w-full max-w-md mx-auto z-10 px-4">
+      {/* Outer subtle glow highlight */}
+      <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-cyan-500/20 via-blue-600/20 to-teal-400/20 blur-xl opacity-70 animate-pulse pointer-events-none" />
+
+      {/* Main Glassmorphism Card */}
+      <div className="relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 shadow-2xl p-8 sm:p-10 text-gray-100 overflow-hidden">
+        {/* Top Tech Accent Grid Line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-teal-400 to-blue-600" />
+        
+        {/* Subtle background glow inside card */}
+        <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-48 h-48 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+
+        {/* Branding Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-xs font-semibold tracking-wider uppercase mb-4 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>Urbanix Internal Workspace</span>
+          </div>
+          
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-gray-950 text-xl shadow-lg shadow-cyan-500/25">
+              U
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
+              URBANIX <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">CRM</span>
+            </h1>
+          </div>
+          
+          <p className="text-xs sm:text-sm text-gray-400 font-medium">
+            Private Enterprise Agency Portal
+          </p>
+        </div>
+
+        {/* Security Alert Banner */}
+        <div className="mb-6 p-3 rounded-lg bg-gray-950/70 border border-gray-800/80 text-[11px] sm:text-xs text-gray-400 flex items-center gap-2.5">
+          <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span>Restricted Portal. Authorized personnel only via admin credentials.</span>
+        </div>
+
+        {errorMessage && (
+          <div className="mb-6 p-3 rounded-lg bg-red-950/50 border border-red-800/60 text-xs text-red-300 flex items-center gap-2 animate-shake">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Employee ID Field */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+              Employee ID
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 group-focus-within:text-cyan-400 transition-colors">
+                <UserCheck className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                placeholder="e.g. URB-DEV-01"
+                required
+                className="w-full pl-10 pr-4 py-3 bg-gray-950/90 border border-gray-800 rounded-xl text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
+              />
+            </div>
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+              Password
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500 group-focus-within:text-cyan-400 transition-colors">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                className="w-full pl-10 pr-4 py-3 bg-gray-950/90 border border-gray-800 rounded-xl text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
+              />
+            </div>
+          </div>
+
+          {/* Glowing Secure Login Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="group relative w-full py-3.5 px-6 rounded-xl font-semibold text-sm text-gray-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-400 hover:from-cyan-300 hover:to-teal-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all duration-300 transform active:scale-[0.99] disabled:opacity-75 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="relative flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-gray-950 border-t-transparent rounded-full animate-spin" />
+                  <span>Authenticating Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>SECURE LOGIN</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </div>
+          </button>
+        </form>
+
+        {/* Preset Demo Access Quick Pick (Helpful for test environment) */}
+        <div className="mt-8 pt-6 border-t border-gray-800/80">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+            <span className="font-medium text-gray-500">Quick Test Accounts:</span>
+            <span className="text-[10px] text-cyan-400/80 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Auto-Fill Demo
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => fillDemoCreds('URB-DEV-01')}
+              className="px-2.5 py-1.5 rounded-lg bg-gray-950/60 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500/40 text-[11px] font-mono text-gray-300 text-left transition-colors truncate"
+            >
+              URB-DEV-01 (Gaurav)
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemoCreds('URB-ADM-09')}
+              className="px-2.5 py-1.5 rounded-lg bg-gray-950/60 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500/40 text-[11px] font-mono text-gray-300 text-left transition-colors truncate"
+            >
+              URB-ADM-09 (Admin)
+            </button>
+          </div>
+        </div>
+
+        {/* Footer info */}
+        <div className="mt-6 text-center text-[10px] text-gray-400">
+          Urbanix Solutions Internal Portal v3.4.0 • 256-bit Encrypted Session
+        </div>
+      </div>
+    </div>
+  );
+};

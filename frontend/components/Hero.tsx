@@ -282,21 +282,17 @@ export default function Hero() {
             >
               <div>
                 <div className="text-xl font-semibold text-white font-serif h-7 flex items-center">
-                  {isLoading ? (
-                    <span className="inline-block w-8 h-5 bg-white/10 rounded animate-pulse" />
-                  ) : (
-                    `${projectCount ?? 0}+`
-                  )}
+                  25+
                 </div>
-                <div className="text-xs text-[#4a5568] mt-0.5 tracking-wide">Projects Delivered</div>
+                <div className="text-xs text-[#4a5568] mt-0.5 tracking-wide">Vetted Tech Experts</div>
               </div>
               <div>
                 <div className="text-xl font-semibold text-white font-serif h-7 flex items-center">98%</div>
                 <div className="text-xs text-[#4a5568] mt-0.5 tracking-wide">Client Satisfaction</div>
               </div>
               <div>
-                <div className="text-xl font-semibold text-white font-serif h-7 flex items-center">2 Years</div>
-                <div className="text-xs text-[#4a5568] mt-0.5 tracking-wide">Industry Experience</div>
+                <div className="text-xl font-semibold text-white font-serif h-7 flex items-center">100%</div>
+                <div className="text-xs text-[#4a5568] mt-0.5 tracking-wide">Custom Solutions</div>
               </div>
             </div>
           </div>
