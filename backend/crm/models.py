@@ -17,6 +17,11 @@ class TeamMember(models.Model):
     """An internal employee or freelancer on the agency roster."""
 
     name = models.CharField(max_length=200)
+    email = models.EmailField(
+        blank=True,
+        null=True,
+        help_text="Email address for notifications and credential updates."
+    )
     role = models.CharField(max_length=100, help_text='e.g. "Frontend Developer", "Designer"')
     is_freelancer = models.BooleanField(
         default=False,

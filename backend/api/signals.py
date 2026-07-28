@@ -51,6 +51,9 @@ def send_update_credentials_email(email, name, role, employee_id, new_password):
     """
     Sends an HTML update email notifying the user of their new role and updated password.
     """
+    print(f"Attempting to send email to: {email}")
+    logger.info(f"Attempting to send email to: {email}")
+
     login_url = "https://www.urbanixsolution.online/agency-portal"
     subject = "Your Urbanix Solution Account & Role Have Been Updated 🚀"
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
@@ -154,6 +157,7 @@ def send_update_credentials_email(email, name, role, employee_id, new_password):
     except Exception as e:
         logger.exception(f"[UPDATE EMAIL ERROR] Failed to send update email to {email}: {e}")
         print(f"[UPDATE EMAIL FAILURE] Exception while sending email to {email}: {e}")
+        raise e
 
 
 @receiver(post_save, sender=CareerApplication)
@@ -206,6 +210,7 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
         TeamMember.objects.get_or_create(
             name=instance.name,
             defaults={
+                'email': instance.email,
                 'role': instance.role_applied,
                 'is_freelancer': True,
                 'standard_charge': 0.00,
@@ -219,6 +224,9 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                 hire_status='Hired',
                 is_converted=True
             )
+
+        print(f"Attempting to send email to: {instance.email}")
+        logger.info(f"Attempting to send email to: {instance.email}")
 
         login_url = "https://www.urbanixsolution.online/agency-portal"
         subject = "Welcome to Urbanix Solution! You're Hired 🚀"
@@ -333,6 +341,7 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
         except Exception as e:
             logger.exception(f"[HIRING AUTOMATION EMAIL ERROR] Failed to send email to {instance.email}: {e}")
             print(f"[HIRING AUTOMATION EMAIL EXCEPTION] Failed to send email to {instance.email}: {e}")
+            raise e
 
 
 @receiver(post_save, sender=UserProfile)
@@ -342,6 +351,16 @@ def handle_user_profile_update_email(sender, instance, created, **kwargs):
     Generates a new password, updates the User account, sends an HTML email, and resets the checkbox.
     """
     if instance.send_update_email:
+        target_email = instance.user.email
+        print(f"Attempting to send email to: {target_email}")
+        logger.info(f"Attempting to send email to: {target_email}")
+
+        if not target_email:
+            print(f"ERROR: UserProfile '{instance.employee_id}' has no associated User email!")
+            logger.error(f"UserProfile '{instance.employee_id}' has no associated User email!")
+            UserProfile.objects.filter(pk=instance.pk).update(send_update_email=False)
+            return
+
         new_password = generate_secure_password(8)
         
         # Update User password
@@ -352,7 +371,7 @@ def handle_user_profile_update_email(sender, instance, created, **kwargs):
         # Send HTML email with updated role and credentials
         name = user.get_full_name() or user.username
         send_update_credentials_email(
-            email=user.email,
+            email=target_email,
             name=name,
             role=instance.role,
             employee_id=instance.employee_id,
@@ -367,27 +386,49 @@ def handle_user_profile_update_email(sender, instance, created, **kwargs):
 def handle_team_member_update_email(sender, instance, created, **kwargs):
     """
     Triggered when crm.TeamMember.send_update_email is checked.
-    Finds matching User/UserProfile, resets password, sends HTML email, and resets the checkbox.
+    Finds target email from TeamMember.email or matching UserProfile, resets password, sends HTML email, and resets checkbox.
     """
     if instance.send_update_email:
-        profile = UserProfile.objects.filter(user__first_name__icontains=instance.name.split()[0]).first()
+        target_email = getattr(instance, 'email', None)
+        profile = None
+
+        if target_email:
+            profile = UserProfile.objects.filter(user__email__iexact=target_email).first()
+
+        if not profile:
+            first_name = instance.name.split()[0] if instance.name else ""
+            profile = UserProfile.objects.filter(user__first_name__icontains=first_name).first()
+            if profile and not target_email:
+                target_email = profile.user.email
+
+        if not target_email and hasattr(instance, 'email') and instance.email:
+            target_email = instance.email
+
+        if not target_email:
+            print(f"ERROR: Could not find target email for TeamMember '{instance.name}'!")
+            logger.error(f"Could not find target email for TeamMember '{instance.name}'!")
+            TeamMember.objects.filter(pk=instance.pk).update(send_update_email=False)
+            return
+
+        print(f"Attempting to send email to: {target_email}")
+        logger.info(f"Attempting to send email to: {target_email}")
+
+        new_password = generate_secure_password(8)
+        employee_id = profile.employee_id if profile else f"URB-{instance.id:03d}"
+
         if profile:
-            new_password = generate_secure_password(8)
             profile.user.set_password(new_password)
             profile.user.save()
-            
-            # Sync role to profile
             profile.role = instance.role
             profile.save()
 
-            name = profile.user.get_full_name() or instance.name
-            send_update_credentials_email(
-                email=profile.user.email,
-                name=name,
-                role=instance.role,
-                employee_id=profile.employee_id,
-                new_password=new_password
-            )
+        send_update_credentials_email(
+            email=target_email,
+            name=instance.name,
+            role=instance.role,
+            employee_id=employee_id,
+            new_password=new_password
+        )
 
         # Reset send_update_email without recursion
         TeamMember.objects.filter(pk=instance.pk).update(send_update_email=False)
