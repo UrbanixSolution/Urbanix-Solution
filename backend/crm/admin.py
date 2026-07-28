@@ -24,14 +24,15 @@ from .models import (
 class TeamMemberAdmin(admin.ModelAdmin):
     """Admin view for agency team members and freelancers."""
 
-    list_display = ('name', 'role', 'is_freelancer', 'standard_charge', 'average_rating', 'total_tasks_completed')
-    list_filter  = ('is_freelancer', 'role')
+    list_display = ('name', 'role', 'is_freelancer', 'send_update_email', 'standard_charge', 'average_rating', 'total_tasks_completed')
+    list_editable = ('send_update_email',)
+    list_filter  = ('is_freelancer', 'send_update_email', 'role')
     search_fields = ('name', 'role')
     ordering = ('name',)
 
     fieldsets = (
         ('Identity', {
-            'fields': ('name', 'role', 'is_freelancer'),
+            'fields': ('name', 'role', 'is_freelancer', 'send_update_email'),
         }),
         ('Financials & Performance', {
             'fields': ('standard_charge', 'average_rating', 'total_tasks_completed'),

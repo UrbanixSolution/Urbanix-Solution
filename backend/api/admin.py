@@ -67,9 +67,9 @@ class UserProfileAdmin(admin.ModelAdmin):
     Agency Admin can enable/disable financial access and administrative privileges per user.
     """
     inlines = [DashboardPermissionInline]
-    list_display = ['employee_id', 'user_full_name', 'user_email', 'role', 'department', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin']
-    list_editable = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin']
-    list_filter = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin', 'department']
+    list_display = ['employee_id', 'user_full_name', 'user_email', 'role', 'department', 'send_update_email', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin']
+    list_editable = ['send_update_email', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin']
+    list_filter = ['send_update_email', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin', 'department']
     search_fields = ['employee_id', 'user__username', 'user__email', 'user__first_name', 'user__last_name', 'role']
     ordering = ['employee_id']
 

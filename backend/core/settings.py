@@ -31,6 +31,13 @@ django.template.context.BaseContext.__copy__ = _patched_base_context_copy
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Explicitly load .env file from BASE_DIR
+env_file_path = BASE_DIR / '.env'
+if env_file_path.exists():
+    load_dotenv(env_file_path, override=True)
+else:
+    load_dotenv()
+
 # ---------------------------------------------------------------------------
 # Security — Core
 # ---------------------------------------------------------------------------

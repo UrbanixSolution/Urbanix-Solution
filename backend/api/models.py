@@ -261,6 +261,11 @@ class UserProfile(models.Model):
         help_text="If True, user has full agency administrative access."
     )
 
+    send_update_email = models.BooleanField(
+        default=False,
+        help_text="Check this to generate a new password and email the user with their updated role and new credentials."
+    )
+
     class Meta:
         verbose_name = "User Profile"
         verbose_name_plural = "User Profiles"
