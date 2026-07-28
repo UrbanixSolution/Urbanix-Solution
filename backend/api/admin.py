@@ -8,6 +8,9 @@ raw api inbox into the CRM app (crm.Client and crm.TeamMember).
 from django.contrib import admin
 from django.utils.html import format_html
 
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
+
 from .models import (
     Service,
     Category,
@@ -19,7 +22,42 @@ from .models import (
     AgencyPartnerLead,
     CallbackRequest,
     UserProfile,
+    DashboardPermission,
+    CoreTeam,
 )
+
+# Unregister default User model from admin
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
+
+
+@admin.register(CoreTeam)
+class CoreTeamAdmin(UserAdmin):
+    """
+    Custom UserAdmin for Core Team members.
+    Displays as "Core Team" under Authentication section in Django Admin.
+    """
+    pass
+
+
+class DashboardPermissionInline(admin.StackedInline):
+    """
+    Inline Admin Checkboxes for Dashboard Card Permissions.
+    Appears directly inside User Profile in Django Admin.
+    """
+    model = DashboardPermission
+    can_delete = False
+    verbose_name = "Dashboard Card Permission"
+    verbose_name_plural = "Granular Dashboard Card Display Permissions (Checkboxes)"
+    fields = [
+        'can_view_active_projects_card',
+        'can_view_pending_tasks_card',
+        'can_view_financials_and_payouts',
+        'can_view_project_timeline',
+        'can_view_priority_queue',
+    ]
 
 
 @admin.register(UserProfile)
@@ -28,6 +66,7 @@ class UserProfileAdmin(admin.ModelAdmin):
     Admin view for User Profiles & RBAC Permissions.
     Agency Admin can enable/disable financial access and administrative privileges per user.
     """
+    inlines = [DashboardPermissionInline]
     list_display = ['employee_id', 'user_full_name', 'user_email', 'role', 'department', 'can_view_finance', 'can_view_all_projects', 'is_agency_admin']
     list_editable = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin']
     list_filter = ['can_view_finance', 'can_view_all_projects', 'is_agency_admin', 'department']
@@ -41,6 +80,16 @@ class UserProfileAdmin(admin.ModelAdmin):
     @admin.display(description='Email')
     def user_email(self, obj):
         return obj.user.email
+
+
+@admin.register(DashboardPermission)
+class DashboardPermissionAdmin(admin.ModelAdmin):
+    """
+    Direct Admin view for Dashboard Card Permissions.
+    """
+    list_display = ['user', 'can_view_active_projects_card', 'can_view_pending_tasks_card', 'can_view_financials_and_payouts', 'can_view_project_timeline', 'can_view_priority_queue']
+    list_editable = ['can_view_active_projects_card', 'can_view_pending_tasks_card', 'can_view_financials_and_payouts', 'can_view_project_timeline', 'can_view_priority_queue']
+    search_fields = ['user__username', 'user__email', 'user__first_name', 'user__last_name']
 
 
 def approve_and_hire(modeladmin, request, queryset):

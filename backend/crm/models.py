@@ -40,8 +40,8 @@ class TeamMember(models.Model):
 
     class Meta:
         ordering = ['name']
-        verbose_name = 'Team Member'
-        verbose_name_plural = 'Team Members'
+        verbose_name = 'Freelancer'
+        verbose_name_plural = 'Freelance Team'
 
     def __str__(self):
         tag = 'Freelancer' if self.is_freelancer else 'Employee'

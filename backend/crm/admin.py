@@ -13,7 +13,6 @@ from .models import (
     Client,
     ProjectTask,
     ContactLead,
-    CareerApplication,
 )
 
 
@@ -131,25 +130,4 @@ class ContactLeadAdmin(admin.ModelAdmin):
     )
 
 
-# ---------------------------------------------------------------------------
-# Career Application Admin
-# ---------------------------------------------------------------------------
 
-@admin.register(CareerApplication)
-class CareerApplicationAdmin(admin.ModelAdmin):
-    """Admin view for job / internship applications."""
-
-    list_display  = ('applicant_name', 'role_applied_for', 'portfolio_link', 'applied_at')
-    list_filter   = ('applied_at', 'role_applied_for')
-    search_fields = ('applicant_name', 'role_applied_for')
-    ordering      = ('-applied_at',)
-    readonly_fields = ('applied_at',)
-
-    fieldsets = (
-        ('Applicant', {
-            'fields': ('applicant_name', 'role_applied_for', 'portfolio_link'),
-        }),
-        ('Metadata', {
-            'fields': ('applied_at',),
-        }),
-    )

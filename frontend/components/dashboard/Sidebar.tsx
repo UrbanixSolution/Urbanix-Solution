@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onLogout,
 }) => {
-  const canViewFinance = user.permissions?.can_view_finance ?? true;
+  const canViewFinance = user.permissions?.can_view_financials_and_payouts ?? user.permissions?.can_view_finance ?? true;
 
   const navItems = [
     {

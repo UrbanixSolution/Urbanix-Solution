@@ -222,6 +222,16 @@ class CareerApplication(models.Model):
 
 from django.contrib.auth.models import User
 
+
+class CoreTeam(User):
+    """
+    Proxy model for User to display as "Core Team" in Django Admin.
+    """
+    class Meta:
+        proxy = True
+        verbose_name = "Core Team Member"
+        verbose_name_plural = "Core Team"
+
 class UserProfile(models.Model):
     """
     Extended user profile for Agency CRM Team Members containing Employee ID and RBAC permissions.
@@ -257,6 +267,43 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username} ({self.employee_id}) - {self.role}"
+
+
+class DashboardPermission(models.Model):
+    """
+    Granular card-by-card UI display permissions for Agency CRM Dashboard.
+    Managed via Django Admin Inline checkboxes.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='dashboard_permissions', null=True, blank=True)
+    user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='dashboard_permissions', null=True, blank=True)
+    can_view_active_projects_card = models.BooleanField(
+        default=True,
+        help_text="Controls visibility of Active Projects overview card."
+    )
+    can_view_pending_tasks_card = models.BooleanField(
+        default=True,
+        help_text="Controls visibility of Pending Tasks overview card."
+    )
+    can_view_financials_and_payouts = models.BooleanField(
+        default=False,
+        help_text="Controls visibility of Unbilled / Pending Payouts card (₹) & Payouts Ledger."
+    )
+    can_view_project_timeline = models.BooleanField(
+        default=True,
+        help_text="Controls visibility of Active Project Timeline section."
+    )
+    can_view_priority_queue = models.BooleanField(
+        default=True,
+        help_text="Controls visibility of Priority Task Queue card."
+    )
+
+    class Meta:
+        verbose_name = "Dashboard Card Permission"
+        verbose_name_plural = "Dashboard Card Permissions"
+
+    def __str__(self):
+        username = self.user.username if self.user else (self.user_profile.user.username if self.user_profile else "User")
+        return f"Dashboard Card Permissions for {username}"
 
 
 

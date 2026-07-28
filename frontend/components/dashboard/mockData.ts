@@ -2,6 +2,11 @@ export interface UserPermissions {
   is_admin: boolean;
   can_view_finance: boolean;
   can_view_all_projects: boolean;
+  can_view_active_projects_card?: boolean;
+  can_view_pending_tasks_card?: boolean;
+  can_view_financials_and_payouts?: boolean;
+  can_view_project_timeline?: boolean;
+  can_view_priority_queue?: boolean;
 }
 
 export interface UserProfile {

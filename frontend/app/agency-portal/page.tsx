@@ -60,11 +60,7 @@ export default function AgencyPortalPage() {
             department: data.user.department || 'Production',
             avatarUrl: data.user.avatar_url || INITIAL_USER.avatarUrl,
             email: data.user.email || 'employee@urbanixsolution.online',
-            permissions: data.permissions || {
-              is_admin: false,
-              can_view_finance: false,
-              can_view_all_projects: false
-            }
+            permissions: data.permissions || data.user.permissions
           });
         }
 
@@ -75,7 +71,7 @@ export default function AgencyPortalPage() {
         if (data.notifications) setNotifications(data.notifications);
       }
     } catch (err) {
-      console.warn("Django REST API offline. Operating in fallback interactive mode.", err);
+      console.warn("Django REST API offline error.", err);
     } finally {
       setIsLoadingData(false);
     }
@@ -93,28 +89,11 @@ export default function AgencyPortalPage() {
         department: loginData.user.department,
         avatarUrl: loginData.user.avatar_url || INITIAL_USER.avatarUrl,
         email: loginData.user.email,
-        permissions: loginData.permissions || {
-          is_admin: employeeId.toUpperCase().includes('ADM'),
-          can_view_finance: employeeId.toUpperCase().includes('ADM'),
-          can_view_all_projects: employeeId.toUpperCase().includes('ADM')
-        }
-      });
-    } else {
-      // Fallback role assignment based on ID prefix
-      const isAdmin = employeeId.toUpperCase().includes('ADM');
-      setUser({
-        ...INITIAL_USER,
-        employeeId: employeeId.toUpperCase(),
-        name: isAdmin ? 'Admin Operations Director' : 'Gaurav Sharma (Video Editor)',
-        permissions: {
-          is_admin: isAdmin,
-          can_view_finance: isAdmin,
-          can_view_all_projects: isAdmin
-        }
+        permissions: loginData.permissions || loginData.user.permissions
       });
     }
 
-    // Trigger REST API sync
+    // Fetch real dashboard state & card permissions
     fetchDashboardData(employeeId);
   };
 

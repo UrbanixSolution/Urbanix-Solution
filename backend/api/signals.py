@@ -123,55 +123,106 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
             )
 
         # 4. Automated Congratulatory Email
-        login_url = "http://localhost:3000/agency-portal"
-        subject = f"Welcome to Urbanix Solution! Your Official Account Credentials ({employee_id})"
+        login_url = "https://www.urbanixsolution.online/agency-portal"
+        subject = "Welcome to Urbanix Solution! You're Hired 🚀"
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
         to_email = [instance.email]
 
         html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0f19; color: #f5f5f7; margin: 0; padding: 20px; }}
-            .card {{ max-width: 600px; margin: 0 auto; background: #111827; border: 1px solid #1e2c44; border-radius: 16px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
-            .header {{ text-align: center; border-b: 1px solid #1e2c44; padding-bottom: 20px; }}
-            .badge {{ display: inline-block; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); color: #22d3ee; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }}
-            .title {{ font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 12px; }}
-            .creds-box {{ background: #0b0f19; border: 1px solid #374151; border-radius: 12px; padding: 20px; margin: 24px 0; }}
-            .cred-item {{ margin-bottom: 12px; font-family: monospace; font-size: 14px; color: #e5e7eb; }}
-            .cred-val {{ font-weight: bold; color: #22d3ee; font-size: 16px; }}
-            .btn {{ display: block; width: 220px; margin: 24px auto 0; text-align: center; background: linear-gradient(135deg, #22d3ee, #14b8a6); color: #0b0f19; font-weight: bold; text-decoration: none; padding: 14px 24px; border-radius: 10px; box-shadow: 0 4px 20px rgba(6,182,212,0.3); }}
-            .footer {{ text-align: center; font-size: 11px; color: #6b7280; margin-top: 24px; }}
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <div class="header">
-              <span class="badge">Urbanix Solution Onboarding</span>
-              <h1 class="title">Congratulations, {instance.name}! 🎉</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0b0f19; color: #f5f5f7; margin: 0; padding: 24px 12px;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <div style="max-width: 600px; width: 100%; background: #111827; border: 1px solid #1f2937; border-radius: 20px; padding: 36px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: left;">
+          
+          <!-- Header Branding -->
+          <div style="text-align: center; border-bottom: 1px solid #1f2937; padding-bottom: 24px; margin-bottom: 28px;">
+            <div style="display: inline-block; background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.35); color: #22d3ee; padding: 6px 16px; border-radius: 30px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+              URBANIX SOLUTION • OFFICIAL ONBOARDING
             </div>
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
-              We are thrilled to officially welcome you to the <strong>Urbanix Solution</strong> team as a <strong>{instance.role_applied}</strong>.
+            <h1 style="font-size: 24px; font-weight: 800; color: #ffffff; margin: 16px 0 6px 0; tracking-tight: -0.02em;">
+              Welcome to Urbanix Solution! You're Hired 🚀
+            </h1>
+            <p style="font-size: 13px; color: #9ca3af; margin: 0;">
+              Elite Digital & Tech Growth Partner
             </p>
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
-              Your internal agency CRM workspace account has been provisioned. Please find your secure login credentials below:
+          </div>
+
+          <!-- Greeting -->
+          <p style="font-size: 15px; line-height: 1.6; color: #e5e7eb; margin-bottom: 16px;">
+            Dear <strong>{instance.name}</strong>,
+          </p>
+          <p style="font-size: 14px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px;">
+            We are thrilled to officially welcome you to the <strong>Urbanix Solution</strong> team as a <strong>{instance.role_applied}</strong>! After thoroughly reviewing your application and background, we are highly impressed with your capabilities and excited to work together.
+          </p>
+
+          <!-- Vetted Network Expectation Box -->
+          <div style="background: rgba(6,182,212,0.06); border-left: 4px solid #06b6d4; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+            <p style="font-size: 13px; line-height: 1.6; color: #38bdf8; margin: 0; font-weight: 500;">
+              💡 <strong>Vetted Talent Network Expectation:</strong><br>
+              You are now officially part of our vetted network. Whenever a new client project arrives that perfectly matches your skillset, we will assign it to you and notify you immediately.
             </p>
+          </div>
+
+          <!-- Credentials Box -->
+          <div style="background: #0b0f19; border: 1px solid #374151; border-radius: 16px; padding: 24px; margin-bottom: 28px;">
+            <h3 style="font-size: 12px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0;">
+              🔒 Your Internal Portal Credentials
+            </h3>
             
-            <div class="creds-box">
-              <div class="cred-item">Portal URL: <span style="color: #60a5fa;">{login_url}</span></div>
-              <div class="cred-item">Employee ID: <span class="cred-val">{employee_id}</span></div>
-              <div class="cred-item">Password: <span class="cred-val">{raw_password}</span></div>
+            <div style="margin-bottom: 12px; font-family: monospace; font-size: 14px; color: #d1d5db;">
+              <span style="color: #6b7280;">Portal URL:</span> 
+              <a href="{login_url}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">{login_url}</a>
             </div>
 
-            <a href="{login_url}" class="btn">LOG IN TO CRM PORTAL</a>
+            <div style="margin-bottom: 12px; font-family: monospace; font-size: 14px; color: #d1d5db;">
+              <span style="color: #6b7280;">Employee ID:</span> 
+              <span style="color: #22d3ee; font-weight: bold; font-size: 16px; background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 6px;">{employee_id}</span>
+            </div>
 
-            <div class="footer">
-              Urbanix Solution Security Protocol • Do not share your password with anyone.
+            <div style="font-family: monospace; font-size: 14px; color: #d1d5db;">
+              <span style="color: #6b7280;">Password:</span> 
+              <span style="color: #22d3ee; font-weight: bold; font-size: 16px; background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 6px;">{raw_password}</span>
             </div>
           </div>
-        </body>
-        </html>
+
+          <!-- CTA Button -->
+          <div style="text-align: center; margin-bottom: 32px;">
+            <a href="{login_url}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #06b6d4 0%, #0d9488 100%); color: #090d16; font-weight: 800; font-size: 13px; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 10px 25px rgba(6,182,212,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+              LOG IN TO AGENCY PORTAL →
+            </a>
+          </div>
+
+          <!-- Social CTA Footer -->
+          <div style="border-top: 1px solid #1f2937; text-align: center; padding-top: 24px; margin-top: 28px;">
+            <p style="font-size: 12px; font-weight: 600; color: #9ca3af; margin: 0 0 12px 0;">
+              Follow our official pages to stay updated with agency news:
+            </p>
+            <div style="margin-bottom: 20px;">
+              <a href="https://www.instagram.com/urbanix_solution/" target="_blank" style="display: inline-block; margin: 0 8px; font-size: 12px; color: #38bdf8; text-decoration: none; font-weight: 600;">Instagram</a>
+              <span style="color: #374151;">•</span>
+              <a href="https://www.facebook.com/profile.php?id=61592541871468" target="_blank" style="display: inline-block; margin: 0 8px; font-size: 12px; color: #38bdf8; text-decoration: none; font-weight: 600;">Facebook</a>
+              <span style="color: #374151;">•</span>
+              <a href="https://www.urbanixsolution.online" target="_blank" style="display: inline-block; margin: 0 8px; font-size: 12px; color: #38bdf8; text-decoration: none; font-weight: 600;">Website</a>
+            </div>
+            <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">
+              © 2026 Urbanix Solution. All rights reserved.<br>
+              Private & Confidential Security Protocol. Do not forward credentials.
+            </p>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
         """
 
         plain_content = strip_tags(html_content)
@@ -180,6 +231,6 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
             msg = EmailMultiAlternatives(subject, plain_content, from_email, to_email)
             msg.attach_alternative(html_content, "text/html")
             msg.send(fail_silently=False)
-            print(f"[HIRING AUTOMATION] Congratulatory email sent to {instance.email} for {employee_id}")
+            print(f"[HIRING AUTOMATION] Congratulatory onboarding email sent to {instance.email} for {employee_id}")
         except Exception as e:
             print(f"[HIRING AUTOMATION EMAIL ERROR] Failed to send email to {instance.email}: {e}")

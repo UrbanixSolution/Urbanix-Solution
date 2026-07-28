@@ -225,6 +225,8 @@ class CallbackRequestSerializer(serializers.ModelSerializer):
         return attrs
 
 
+from .models import DashboardPermission
+
 class UserProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     email = serializers.EmailField(source='user.email', read_only=True)
@@ -250,9 +252,31 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return full_name if full_name.strip() else obj.user.username
 
     def get_permissions(self, obj):
+        is_admin = obj.is_agency_admin or obj.user.is_superuser
+        
+        # Get or create DashboardPermission instance for this UserProfile/User
+        card_perm = DashboardPermission.objects.filter(user_profile=obj).first() or DashboardPermission.objects.filter(user=obj.user).first()
+        if not card_perm:
+            card_perm = DashboardPermission.objects.create(
+                user_profile=obj,
+                user=obj.user,
+                can_view_active_projects_card=True,
+                can_view_pending_tasks_card=True,
+                can_view_financials_and_payouts=obj.can_view_finance or is_admin,
+                can_view_project_timeline=True,
+                can_view_priority_queue=True,
+            )
+
+        fin_access = card_perm.can_view_financials_and_payouts or obj.can_view_finance or is_admin
+
         return {
-            'is_admin': obj.is_agency_admin or obj.user.is_superuser,
-            'can_view_finance': obj.can_view_finance or obj.is_agency_admin or obj.user.is_superuser,
-            'can_view_all_projects': obj.can_view_all_projects or obj.is_agency_admin or obj.user.is_superuser,
+            'is_admin': is_admin,
+            'can_view_finance': fin_access,
+            'can_view_all_projects': obj.can_view_all_projects or is_admin,
+            'can_view_active_projects_card': card_perm.can_view_active_projects_card or is_admin,
+            'can_view_pending_tasks_card': card_perm.can_view_pending_tasks_card or is_admin,
+            'can_view_financials_and_payouts': fin_access,
+            'can_view_project_timeline': card_perm.can_view_project_timeline or is_admin,
+            'can_view_priority_queue': card_perm.can_view_priority_queue or is_admin,
         }
 

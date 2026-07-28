@@ -37,7 +37,11 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onOpenSupportModal,
   onNavigateTab,
 }) => {
-  const canViewFinance = permissions?.can_view_finance ?? true;
+  const canViewActiveProjects = permissions?.can_view_active_projects_card ?? true;
+  const canViewPendingTasks = permissions?.can_view_pending_tasks_card ?? true;
+  const canViewPayouts = permissions?.can_view_financials_and_payouts ?? permissions?.can_view_finance ?? false;
+  const canViewTimeline = permissions?.can_view_project_timeline ?? true;
+  const canViewPriorityQueue = permissions?.can_view_priority_queue ?? true;
 
   // Calculated stats from data
   const activeProjectsCount = projects.filter((p) => p.status === 'In Progress' || p.status === 'Under Review').length;
@@ -65,7 +69,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               Internal Client & Deliverables Hub
             </h1>
             <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-xl">
-              Track real-time project milestones, task queues, client deliverables{canViewFinance ? ', and pending payout releases' : ''}.
+              Track real-time project milestones, task queues, client deliverables{canViewPayouts ? ', and pending payout releases' : ''}.
             </p>
           </div>
 
@@ -89,75 +93,79 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       </div>
 
       {/* OVERVIEW WIDGET CARDS (Top Row) */}
-      <div className={`grid grid-cols-1 ${canViewFinance ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'} gap-5`}>
+      <div className={`grid grid-cols-1 ${canViewPayouts ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'} gap-5`}>
         {/* Card 1: Active Projects */}
-        <div
-          onClick={() => onNavigateTab('projects')}
-          className="group relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/50 p-6 shadow-xl transition-all duration-300 hover:shadow-cyan-500/10 cursor-pointer overflow-hidden"
-        >
-          <div className="absolute -right-8 -top-8 w-28 h-28 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-colors" />
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-inner">
-              <FolderKanban className="w-6 h-6" />
+        {canViewActiveProjects && (
+          <div
+            onClick={() => onNavigateTab('projects')}
+            className="group relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/50 p-6 shadow-xl transition-all duration-300 hover:shadow-cyan-500/10 cursor-pointer overflow-hidden"
+          >
+            <div className="absolute -right-8 -top-8 w-28 h-28 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-colors" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-inner">
+                <FolderKanban className="w-6 h-6" />
+              </div>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                <TrendingUp className="w-3 h-3" />
+                +2 this month
+              </span>
             </div>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-              <TrendingUp className="w-3 h-3" />
-              +2 this month
+            
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Active Projects
             </span>
+            <div className="flex items-baseline justify-between mt-1">
+              <h3 className="text-3xl font-extrabold text-white tracking-tight">
+                {activeProjectsCount}
+              </h3>
+              <span className="text-xs text-cyan-400 group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-medium">
+                View all <ArrowUpRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-2">
+              Current active milestone assignments
+            </p>
           </div>
-          
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Active Projects
-          </span>
-          <div className="flex items-baseline justify-between mt-1">
-            <h3 className="text-3xl font-extrabold text-white tracking-tight">
-              {activeProjectsCount}
-            </h3>
-            <span className="text-xs text-cyan-400 group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-medium">
-              View all <ArrowUpRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-500 mt-2">
-            Current active milestone assignments
-          </p>
-        </div>
+        )}
 
         {/* Card 2: Pending Tasks */}
-        <div
-          onClick={() => onNavigateTab('tasks')}
-          className="group relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/50 p-6 shadow-xl transition-all duration-300 hover:shadow-cyan-500/10 cursor-pointer overflow-hidden"
-        >
-          <div className="absolute -right-8 -top-8 w-28 h-28 bg-teal-500/10 rounded-full blur-2xl group-hover:bg-teal-500/20 transition-colors" />
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-400 flex items-center justify-center shadow-inner">
-              <CheckSquare className="w-6 h-6" />
+        {canViewPendingTasks && (
+          <div
+            onClick={() => onNavigateTab('tasks')}
+            className="group relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/50 p-6 shadow-xl transition-all duration-300 hover:shadow-cyan-500/10 cursor-pointer overflow-hidden"
+          >
+            <div className="absolute -right-8 -top-8 w-28 h-28 bg-teal-500/10 rounded-full blur-2xl group-hover:bg-teal-500/20 transition-colors" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-400 flex items-center justify-center shadow-inner">
+                <CheckSquare className="w-6 h-6" />
+              </div>
+              {pendingUrgentTasks.length > 0 && (
+                <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                  <AlertCircle className="w-3 h-3" />
+                  {pendingUrgentTasks.length} Urgent
+                </span>
+              )}
             </div>
-            {pendingUrgentTasks.length > 0 && (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-1 rounded-full">
-                <AlertCircle className="w-3 h-3" />
-                {pendingUrgentTasks.length} Urgent
-              </span>
-            )}
-          </div>
 
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Pending Tasks
-          </span>
-          <div className="flex items-baseline justify-between mt-1">
-            <h3 className="text-3xl font-extrabold text-white tracking-tight">
-              {pendingTasksCount}
-            </h3>
-            <span className="text-xs text-teal-400 group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-medium">
-              Task board <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Pending Tasks
             </span>
+            <div className="flex items-baseline justify-between mt-1">
+              <h3 className="text-3xl font-extrabold text-white tracking-tight">
+                {pendingTasksCount}
+              </h3>
+              <span className="text-xs text-teal-400 group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-medium">
+                Task board <ArrowUpRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-2">
+              Action items requiring review or dev
+            </p>
           </div>
-          <p className="text-[11px] text-gray-500 mt-2">
-            Action items requiring review or dev
-          </p>
-        </div>
+        )}
 
         {/* Card 3: Unbilled/Pending Payouts - CONDITIONAL RBAC RENDERING */}
-        {canViewFinance && (
+        {canViewPayouts && (
           <div
             onClick={() => onNavigateTab('payouts')}
             className="group relative rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/50 p-6 shadow-xl transition-all duration-300 hover:shadow-cyan-500/10 cursor-pointer overflow-hidden sm:col-span-2 lg:col-span-1"
@@ -190,105 +198,107 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         )}
       </div>
 
-      {/* MIDDLE SECTION: ACTIVE PROJECT TIMELINE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* MIDDLE SECTION: ACTIVE PROJECT TIMELINE & SIDEBAR QUEUE */}
+      <div className={`grid grid-cols-1 ${canViewPriorityQueue ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
         {/* Left 2 Cols: Project Timeline List / Table */}
-        <div className="lg:col-span-2 rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 p-6 shadow-xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-                  <Layers className="w-4 h-4" />
+        {canViewTimeline && (
+          <div className={`${canViewPriorityQueue ? 'lg:col-span-2' : 'lg:col-span-1'} rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 p-6 shadow-xl flex flex-col justify-between`}>
+            <div>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white tracking-tight">
+                      Active Project Timeline
+                    </h3>
+                    <p className="text-xs text-gray-400">
+                      Live client projects with deadline indicators and visual progress
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">
-                    Active Project Timeline
-                  </h3>
-                  <p className="text-xs text-gray-400">
-                    Live client projects with deadline indicators and visual progress
-                  </p>
-                </div>
+
+                <button
+                  onClick={() => onNavigateTab('projects')}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <span>View All</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
 
-              <button
-                onClick={() => onNavigateTab('projects')}
-                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors"
-              >
-                <span>View All</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              {/* Timeline Item List */}
+              <div className="space-y-4">
+                {projects.map((project) => {
+                  const getStatusBadge = (status: Project['status']) => {
+                    switch (status) {
+                      case 'In Progress':
+                        return 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40';
+                      case 'Under Review':
+                        return 'bg-amber-950/70 text-amber-300 border-amber-500/40';
+                      case 'Completed':
+                        return 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40';
+                      default:
+                        return 'bg-gray-800 text-gray-400 border-gray-700';
+                    }
+                  };
 
-            {/* Timeline Item List */}
-            <div className="space-y-4">
-              {projects.map((project) => {
-                const getStatusBadge = (status: Project['status']) => {
-                  switch (status) {
-                    case 'In Progress':
-                      return 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40';
-                    case 'Under Review':
-                      return 'bg-amber-950/70 text-amber-300 border-amber-500/40';
-                    case 'Completed':
-                      return 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40';
-                    default:
-                      return 'bg-gray-800 text-gray-400 border-gray-700';
-                  }
-                };
+                  return (
+                    <div
+                      key={project.id}
+                      className="p-4 rounded-xl bg-gray-950/60 border border-gray-800/80 hover:border-gray-700 transition-all space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-cyan-400 mt-2 shrink-0 animate-pulse" />
+                          <div>
+                            <h4 className="text-sm font-bold text-white tracking-wide">
+                              {project.title}
+                            </h4>
+                            <span className="text-xs text-gray-400">
+                              Client: <strong className="text-gray-300">{project.clientName}</strong>
+                            </span>
+                          </div>
+                        </div>
 
-                return (
-                  <div
-                    key={project.id}
-                    className="p-4 rounded-xl bg-gray-950/60 border border-gray-800/80 hover:border-gray-700 transition-all space-y-3"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 mt-2 shrink-0 animate-pulse" />
-                        <div>
-                          <h4 className="text-sm font-bold text-white tracking-wide">
-                            {project.title}
-                          </h4>
-                          <span className="text-xs text-gray-400">
-                            Client: <strong className="text-gray-300">{project.clientName}</strong>
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <span
+                            className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${getStatusBadge(
+                              project.status
+                            )}`}
+                          >
+                            {project.status}
+                          </span>
+                          <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-cyan-400" />
+                            {project.deadline}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-start sm:self-auto">
-                        <span
-                          className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${getStatusBadge(
-                            project.status
-                          )}`}
-                        >
-                          {project.status}
-                        </span>
-                        <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-cyan-400" />
-                          {project.deadline}
-                        </span>
+                      {/* Visual Progress Bar (Neon Teal & Cyan) */}
+                      <div>
+                        <div className="flex justify-between text-xs mb-1.5 font-medium">
+                          <span className="text-gray-400">{project.deliverableType}</span>
+                          <span className="text-cyan-400 font-mono font-bold">
+                            {project.progressPercent}% Completed
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-gray-900 overflow-hidden p-0.5 border border-gray-800">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+                            style={{ width: `${project.progressPercent}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-
-                    {/* Visual Progress Bar (Neon Teal & Cyan) */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1.5 font-medium">
-                        <span className="text-gray-400">{project.deliverableType}</span>
-                        <span className="text-cyan-400 font-mono font-bold">
-                          {project.progressPercent}% Completed
-                        </span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-gray-900 overflow-hidden p-0.5 border border-gray-800">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
-                          style={{ width: `${project.progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Right 1 Col: Quick Actions & Pending Urgent Tasks */}
         <div className="space-y-6">
@@ -339,45 +349,47 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
 
           {/* Top Priority Task Snapshot */}
-          <div className="rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <FileCheck className="w-4 h-4 text-teal-400" />
-                <span>Priority Queue</span>
-              </h3>
-              <button
-                onClick={() => onNavigateTab('tasks')}
-                className="text-[11px] text-cyan-400 hover:underline"
-              >
-                View board
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              {tasks.slice(0, 3).map((task) => (
-                <div
-                  key={task.id}
-                  className="p-3 rounded-xl bg-gray-950/60 border border-gray-800/80 flex items-center justify-between text-xs"
+          {canViewPriorityQueue && (
+            <div className="rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-teal-400" />
+                  <span>Priority Queue</span>
+                </h3>
+                <button
+                  onClick={() => onNavigateTab('tasks')}
+                  className="text-[11px] text-cyan-400 hover:underline"
                 >
-                  <div className="min-w-0 pr-2">
-                    <h4 className="text-xs font-semibold text-gray-200 truncate">
-                      {task.title}
-                    </h4>
-                    <p className="text-[10px] text-gray-500 truncate">{task.projectName}</p>
-                  </div>
-                  <span
-                    className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
-                      task.priority === 'Urgent'
-                        ? 'bg-red-950 text-red-400 border border-red-800/60'
-                        : 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
-                    }`}
+                  View board
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {tasks.slice(0, 3).map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-3 rounded-xl bg-gray-950/60 border border-gray-800/80 flex items-center justify-between text-xs"
                   >
-                    {task.priority}
-                  </span>
-                </div>
-              ))}
+                    <div className="min-w-0 pr-2">
+                      <h4 className="text-xs font-semibold text-gray-200 truncate">
+                        {task.title}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 truncate">{task.projectName}</p>
+                    </div>
+                    <span
+                      className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
+                        task.priority === 'Urgent'
+                          ? 'bg-red-950 text-red-400 border border-red-800/60'
+                          : 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
+                      }`}
+                    >
+                      {task.priority}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

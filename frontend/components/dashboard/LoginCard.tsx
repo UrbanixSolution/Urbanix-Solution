@@ -8,8 +8,8 @@ interface LoginCardProps {
 }
 
 export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
-  const [employeeId, setEmployeeId] = useState('URB-DEV-01');
-  const [password, setPassword] = useState('urbanixSecure2026!');
+  const [employeeId, setEmployeeId] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -47,26 +47,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
         onLoginSuccess(employeeId.trim(), data);
       } else {
         const errData = await response.json().catch(() => ({}));
-        // Fallback for demo preview mode
         setIsLoading(false);
-        if (response.status === 401 && errData.detail) {
-          // If explicitly unauthorized, show backend message or allow fallback
-          setErrorMessage(errData.detail);
-        } else {
-          onLoginSuccess(employeeId.trim());
-        }
+        setErrorMessage(errData.detail || 'Invalid Employee ID or Password. Access Denied.');
       }
     } catch (err) {
-      // Network error or local preview mode fallback
       setIsLoading(false);
-      onLoginSuccess(employeeId.trim());
+      setErrorMessage('Unable to connect to Authentication Server. Please verify backend service.');
     }
-  };
-
-  const fillDemoCreds = (id: string) => {
-    setEmployeeId(id);
-    setPassword('urbanixSecure2026!');
-    setErrorMessage('');
   };
 
   return (
@@ -132,7 +119,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
                 type="text"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
-                placeholder="e.g. URB-DEV-01"
+                placeholder="e.g. Rahu/2807/01"
                 required
                 className="w-full pl-10 pr-4 py-3 bg-gray-950/90 border border-gray-800 rounded-xl text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
               />
@@ -182,34 +169,8 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* Preset Demo Access Quick Pick (Helpful for test environment) */}
-        <div className="mt-8 pt-6 border-t border-gray-800/80">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-            <span className="font-medium text-gray-500">Quick Test Accounts:</span>
-            <span className="text-[10px] text-cyan-400/80 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Auto-Fill Demo
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => fillDemoCreds('URB-DEV-01')}
-              className="px-2.5 py-1.5 rounded-lg bg-gray-950/60 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500/40 text-[11px] font-mono text-gray-300 text-left transition-colors truncate"
-            >
-              URB-DEV-01 (Gaurav)
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemoCreds('URB-ADM-09')}
-              className="px-2.5 py-1.5 rounded-lg bg-gray-950/60 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500/40 text-[11px] font-mono text-gray-300 text-left transition-colors truncate"
-            >
-              URB-ADM-09 (Admin)
-            </button>
-          </div>
-        </div>
-
         {/* Footer info */}
-        <div className="mt-6 text-center text-[10px] text-gray-400">
+        <div className="mt-8 pt-4 border-t border-gray-800/80 text-center text-[10px] text-gray-400">
           Urbanix Solutions Internal Portal v3.4.0 • 256-bit Encrypted Session
         </div>
       </div>
