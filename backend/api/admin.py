@@ -5,11 +5,15 @@ Includes Lead Conversion Pipeline actions that promote records from the
 raw api inbox into the CRM app (crm.Client and crm.TeamMember).
 """
 
+import logging
 from django.contrib import admin
+from django.contrib import messages
 from django.utils.html import format_html
 
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     Service,
@@ -150,9 +154,9 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
     actions = [approve_and_hire]
 
-    list_display  = ['name', 'email', 'phone', 'role_applied', 'hire_status', 'hire_badge', 'created_at']
-    list_editable = ['hire_status']
-    list_filter   = ['hire_status', 'is_converted', 'role_applied', 'created_at']
+    list_display  = ['name', 'email', 'phone', 'role_applied', 'hire_status', 'send_hired_email', 'hire_badge', 'created_at']
+    list_editable = ['hire_status', 'send_hired_email']
+    list_filter   = ['hire_status', 'send_hired_email', 'is_converted', 'role_applied', 'created_at']
     search_fields = ['name', 'email', 'phone', 'role_applied', 'cover_letter']
     ordering      = ['-created_at']
     readonly_fields = ['created_at']
@@ -165,10 +169,94 @@ class CareerApplicationAdmin(admin.ModelAdmin):
             'fields': ('role_applied', 'state', 'district', 'town', 'portfolio_link', 'cover_letter', 'created_at'),
         }),
         ('Hiring Pipeline Status', {
-            'fields': ('hire_status', 'is_converted'),
-            'description': 'Setting Hire Status to "Hired" automatically creates the Employee User Account and sends credentials via email.',
+            'fields': ('hire_status', 'is_converted', 'send_hired_email'),
+            'description': 'Setting Hire Status to "Hired" and checking "send_hired_email" generates Employee credentials and dispatches the Hired email.',
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        from crm.models import TeamMember
+        from .signals import (
+            generate_unique_employee_id,
+            generate_secure_password,
+            send_hired_onboarding_email,
+        )
+
+        super().save_model(request, obj, form, change)
+
+        # Process hiring & email explicitly when hire_status == 'Hired' and send_hired_email is True
+        if obj.hire_status == 'Hired' and obj.send_hired_email:
+            try:
+                user_exists = User.objects.filter(email=obj.email).exists()
+                if not user_exists:
+                    employee_id = generate_unique_employee_id(obj.name, getattr(obj, 'created_at', None))
+                    raw_password = generate_secure_password(8)
+
+                    name_parts = obj.name.strip().split(' ', 1)
+                    first_name = name_parts[0]
+                    last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+                    user = User.objects.create_user(
+                        username=employee_id,
+                        email=obj.email,
+                        password=raw_password,
+                        first_name=first_name,
+                        last_name=last_name,
+                        is_staff=True,
+                    )
+
+                    dept = 'Engineering'
+                    r_lower = obj.role_applied.lower()
+                    if 'video' in r_lower or 'graphic' in r_lower or 'design' in r_lower:
+                        dept = 'Creative & Media Production'
+                    elif 'marketer' in r_lower or 'seo' in r_lower or 'writer' in r_lower:
+                        dept = 'Growth & Marketing'
+
+                    UserProfile.objects.create(
+                        user=user,
+                        employee_id=employee_id,
+                        role=obj.role_applied,
+                        department=dept,
+                        can_view_finance=False,
+                        can_view_all_projects=False,
+                        is_agency_admin=False,
+                    )
+
+                    TeamMember.objects.get_or_create(
+                        name=obj.name,
+                        defaults={
+                            'email': obj.email,
+                            'role': obj.role_applied,
+                            'is_freelancer': True,
+                            'standard_charge': 0.00,
+                            'average_rating': 5.0,
+                            'total_tasks_completed': 0,
+                        }
+                    )
+                else:
+                    user = User.objects.get(email=obj.email)
+                    profile = UserProfile.objects.filter(user=user).first()
+                    employee_id = profile.employee_id if profile else user.username
+                    raw_password = generate_secure_password(8)
+                    user.set_password(raw_password)
+                    user.save()
+
+                CareerApplication.objects.filter(id=obj.id).update(
+                    hire_status='Hired',
+                    is_converted=True
+                )
+
+                # Send Hired Email
+                send_hired_onboarding_email(obj.email, obj.name, obj.role_applied, employee_id, raw_password)
+                messages.success(request, f"Account created and email sent successfully to {obj.email}!")
+
+            except Exception as e:
+                logger.exception(f"Failed to process hired candidate email for {obj.email}: {e}")
+                messages.error(request, f"Error: Failed to process - {str(e)}")
+
+            finally:
+                # Reset send_hired_email checkbox safely
+                CareerApplication.objects.filter(id=obj.id).update(send_hired_email=False)
 
     def get_queryset(self, request):
         """

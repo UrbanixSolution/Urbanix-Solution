@@ -160,80 +160,19 @@ def send_update_credentials_email(email, name, role, employee_id, new_password):
         raise e
 
 
-@receiver(post_save, sender=CareerApplication)
-def handle_hired_candidate_automation(sender, instance, created, **kwargs):
+def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_password):
     """
-    Triggered when a CareerApplication is saved.
-    When hire_status is 'Hired' or is_converted is True, automatically:
-      1. Generates Employee ID & Password.
-      2. Creates Django User & UserProfile.
-      3. Creates CRM TeamMember.
-      4. Sends congratulatory HTML onboarding email.
+    Sends responsive HTML onboarding email to hired candidate.
     """
-    if instance.hire_status == 'Hired' or instance.is_converted:
-        if User.objects.filter(email=instance.email).exists():
-            return
+    print(f"Attempting to send email to: {email}")
+    logger.info(f"Attempting to send email to: {email}")
 
-        employee_id = generate_unique_employee_id(instance.name, getattr(instance, 'created_at', None))
-        raw_password = generate_secure_password(8)
+    login_url = "https://www.urbanixsolution.online/agency-portal"
+    subject = "Welcome to Urbanix Solution! You're Hired 🚀"
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
+    to_email = [email]
 
-        name_parts = instance.name.strip().split(' ', 1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-
-        user = User.objects.create_user(
-            username=employee_id,
-            email=instance.email,
-            password=raw_password,
-            first_name=first_name,
-            last_name=last_name,
-            is_staff=True,
-        )
-
-        dept = 'Engineering'
-        r_lower = instance.role_applied.lower()
-        if 'video' in r_lower or 'graphic' in r_lower or 'design' in r_lower:
-            dept = 'Creative & Media Production'
-        elif 'marketer' in r_lower or 'seo' in r_lower or 'writer' in r_lower:
-            dept = 'Growth & Marketing'
-
-        UserProfile.objects.create(
-            user=user,
-            employee_id=employee_id,
-            role=instance.role_applied,
-            department=dept,
-            can_view_finance=False,
-            can_view_all_projects=False,
-            is_agency_admin=False,
-        )
-
-        TeamMember.objects.get_or_create(
-            name=instance.name,
-            defaults={
-                'email': instance.email,
-                'role': instance.role_applied,
-                'is_freelancer': True,
-                'standard_charge': 0.00,
-                'average_rating': 5.0,
-                'total_tasks_completed': 0,
-            }
-        )
-
-        if not instance.is_converted or instance.hire_status != 'Hired':
-            CareerApplication.objects.filter(id=instance.id).update(
-                hire_status='Hired',
-                is_converted=True
-            )
-
-        print(f"Attempting to send email to: {instance.email}")
-        logger.info(f"Attempting to send email to: {instance.email}")
-
-        login_url = "https://www.urbanixsolution.online/agency-portal"
-        subject = "Welcome to Urbanix Solution! You're Hired 🚀"
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
-        to_email = [instance.email]
-
-        html_content = f"""
+    html_content = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -261,10 +200,10 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
 
           <!-- Greeting -->
           <p style="font-size: 15px; line-height: 1.6; color: #e5e7eb; margin-bottom: 16px;">
-            Dear <strong>{instance.name}</strong>,
+            Dear <strong>{name}</strong>,
           </p>
           <p style="font-size: 14px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px;">
-            We are thrilled to officially welcome you to the <strong>Urbanix Solution</strong> team as a <strong style="color: #22d3ee;">{instance.role_applied}</strong>! After thoroughly reviewing your application and background, we are highly impressed with your capabilities and excited to work together.
+            We are thrilled to officially welcome you to the <strong>Urbanix Solution</strong> team as a <strong style="color: #22d3ee;">{role_applied}</strong>! After thoroughly reviewing your application and background, we are highly impressed with your capabilities and excited to work together.
           </p>
 
           <!-- Vetted Network Expectation Box -->
@@ -328,20 +267,97 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
   </table>
 </body>
 </html>
-        """
+    """
 
-        plain_content = strip_tags(html_content)
+    plain_content = strip_tags(html_content)
 
+    try:
+        msg = EmailMultiAlternatives(subject, plain_content, from_email, to_email)
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
+        logger.info(f"[HIRING AUTOMATION] Sent onboarding email to {email} for {employee_id}")
+        print(f"[HIRING AUTOMATION SUCCESS] Sent onboarding email to {email} for {employee_id}")
+    except Exception as e:
+        logger.exception(f"[HIRING AUTOMATION EMAIL ERROR] Failed to send email to {email}: {e}")
+        print(f"[HIRING AUTOMATION EMAIL EXCEPTION] Failed to send email to {email}: {e}")
+        raise e
+
+
+@receiver(post_save, sender=CareerApplication)
+def handle_hired_candidate_automation(sender, instance, created, **kwargs):
+    """
+    Triggered when a CareerApplication is saved with hire_status == 'Hired' AND send_hired_email == True.
+    """
+    if instance.hire_status == 'Hired' and instance.send_hired_email:
         try:
-            msg = EmailMultiAlternatives(subject, plain_content, from_email, to_email)
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=False)
-            logger.info(f"[HIRING AUTOMATION] Sent onboarding email to {instance.email} for {employee_id}")
-            print(f"[HIRING AUTOMATION SUCCESS] Sent onboarding email to {instance.email} for {employee_id}")
+            user_exists = User.objects.filter(email=instance.email).exists()
+            if not user_exists:
+                employee_id = generate_unique_employee_id(instance.name, getattr(instance, 'created_at', None))
+                raw_password = generate_secure_password(8)
+
+                name_parts = instance.name.strip().split(' ', 1)
+                first_name = name_parts[0]
+                last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+                user = User.objects.create_user(
+                    username=employee_id,
+                    email=instance.email,
+                    password=raw_password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_staff=True,
+                )
+
+                dept = 'Engineering'
+                r_lower = instance.role_applied.lower()
+                if 'video' in r_lower or 'graphic' in r_lower or 'design' in r_lower:
+                    dept = 'Creative & Media Production'
+                elif 'marketer' in r_lower or 'seo' in r_lower or 'writer' in r_lower:
+                    dept = 'Growth & Marketing'
+
+                UserProfile.objects.create(
+                    user=user,
+                    employee_id=employee_id,
+                    role=instance.role_applied,
+                    department=dept,
+                    can_view_finance=False,
+                    can_view_all_projects=False,
+                    is_agency_admin=False,
+                )
+
+                TeamMember.objects.get_or_create(
+                    name=instance.name,
+                    defaults={
+                        'email': instance.email,
+                        'role': instance.role_applied,
+                        'is_freelancer': True,
+                        'standard_charge': 0.00,
+                        'average_rating': 5.0,
+                        'total_tasks_completed': 0,
+                    }
+                )
+            else:
+                user = User.objects.get(email=instance.email)
+                profile = UserProfile.objects.filter(user=user).first()
+                employee_id = profile.employee_id if profile else user.username
+                raw_password = generate_secure_password(8)
+                user.set_password(raw_password)
+                user.save()
+
+            CareerApplication.objects.filter(id=instance.id).update(
+                hire_status='Hired',
+                is_converted=True
+            )
+
+            # Send Email
+            send_hired_onboarding_email(instance.email, instance.name, instance.role_applied, employee_id, raw_password)
+
         except Exception as e:
-            logger.exception(f"[HIRING AUTOMATION EMAIL ERROR] Failed to send email to {instance.email}: {e}")
-            print(f"[HIRING AUTOMATION EMAIL EXCEPTION] Failed to send email to {instance.email}: {e}")
-            raise e
+            logger.exception(f"[HIRING AUTOMATION ERROR] Failed to process hired candidate {instance.email}: {e}")
+            print(f"[HIRING AUTOMATION ERROR] {e}")
+
+        finally:
+            CareerApplication.objects.filter(id=instance.id).update(send_hired_email=False)
 
 
 @receiver(post_save, sender=UserProfile)

@@ -209,6 +209,10 @@ class CareerApplication(models.Model):
         default=False,
         help_text='Tick when this applicant has been hired and added as a CRM Team Member.'
     )
+    send_hired_email = models.BooleanField(
+        default=False,
+        help_text="Check this box and save to generate credentials and send the official Hired email to the applicant."
+    )
 
     class Meta:
         ordering = ['-created_at']
