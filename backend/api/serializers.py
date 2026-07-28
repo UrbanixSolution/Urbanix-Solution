@@ -129,14 +129,20 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        email = attrs.get('email', '').strip().lower()
-        phone = attrs.get('phone', '').strip()
-        one_day_ago = timezone.now() - timedelta(days=1)
+        email = attrs.get('email', '').strip().lower() if attrs.get('email') else None
+        phone = attrs.get('phone', '').strip() if attrs.get('phone') else None
+        twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
 
-        if email or phone:
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if phone:
+            query |= Q(phone=phone)
+
+        if query:
             duplicate_exists = CareerApplication.objects.filter(
-                Q(email__iexact=email) | Q(phone=phone),
-                created_at__gte=one_day_ago
+                query,
+                created_at__gte=twenty_four_hours_ago
             ).exists()
 
             if duplicate_exists:

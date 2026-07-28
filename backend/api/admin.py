@@ -258,6 +258,14 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                 # Reset send_hired_email checkbox safely
                 CareerApplication.objects.filter(id=obj.id).update(send_hired_email=False)
 
+    def delete_model(self, request, obj):
+        """Hard delete single CareerApplication record from Supabase PostgreSQL database."""
+        obj.delete()
+
+    def delete_queryset(self, request, queryset):
+        """Hard delete selected CareerApplication records from Supabase PostgreSQL database."""
+        queryset.delete()
+
     def get_queryset(self, request):
         """
         OVERRIDE get_queryset:
