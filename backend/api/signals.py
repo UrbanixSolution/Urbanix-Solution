@@ -336,18 +336,6 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                     can_view_all_projects=False,
                     is_agency_admin=False,
                 )
-
-                TeamMember.objects.get_or_create(
-                    name=instance.name,
-                    defaults={
-                        'email': instance.email,
-                        'role': instance.role_applied,
-                        'is_freelancer': True,
-                        'standard_charge': 0.00,
-                        'average_rating': 5.0,
-                        'total_tasks_completed': 0,
-                    }
-                )
             else:
                 user = User.objects.get(email=instance.email)
                 profile = UserProfile.objects.filter(user=user).first()
@@ -355,6 +343,19 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                 raw_password = generate_secure_password(8)
                 user.set_password(raw_password)
                 user.save()
+
+            # Always create or update Freelance Team (TeamMember) profile
+            TeamMember.objects.update_or_create(
+                name=instance.name,
+                defaults={
+                    'email': instance.email,
+                    'role': instance.role_applied,
+                    'is_freelancer': True,
+                    'standard_charge': 0.00,
+                    'average_rating': 5.0,
+                    'total_tasks_completed': 0,
+                }
+            )
 
             CareerApplication.objects.filter(id=instance.id).update(
                 hire_status='Hired',

@@ -117,11 +117,12 @@ def approve_and_hire(modeladmin, request, queryset):
             skipped_count += 1
             continue
 
-        TeamMember.objects.get_or_create(
+        TeamMember.objects.update_or_create(
             name=application.name,
             defaults={
+                'email': application.email,
                 'role': application.role_applied,
-                'is_freelancer': False,
+                'is_freelancer': True,
                 'standard_charge': 0.00,
                 'average_rating': 5.0,
                 'total_tasks_completed': 0,
@@ -135,14 +136,14 @@ def approve_and_hire(modeladmin, request, queryset):
 
     parts = []
     if hired_count:
-        parts.append(f"{hired_count} applicant(s) hired as CRM Team Members")
+        parts.append(f"{hired_count} applicant(s) hired as CRM Freelance Team Members")
     if skipped_count:
         parts.append(f"{skipped_count} already-hired applicant(s) skipped")
 
     modeladmin.message_user(request, " | ".join(parts) if parts else "Nothing to process.")
 
 
-approve_and_hire.short_description = "Hire selected applicants -> CRM Team Members"
+approve_and_hire.short_description = "Hire selected applicants -> Freelance Team"
 
 
 @admin.register(CareerApplication)
@@ -221,18 +222,6 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                         can_view_all_projects=False,
                         is_agency_admin=False,
                     )
-
-                    TeamMember.objects.get_or_create(
-                        name=obj.name,
-                        defaults={
-                            'email': obj.email,
-                            'role': obj.role_applied,
-                            'is_freelancer': True,
-                            'standard_charge': 0.00,
-                            'average_rating': 5.0,
-                            'total_tasks_completed': 0,
-                        }
-                    )
                 else:
                     user = User.objects.get(email=obj.email)
                     profile = UserProfile.objects.filter(user=user).first()
@@ -240,6 +229,19 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     raw_password = generate_secure_password(8)
                     user.set_password(raw_password)
                     user.save()
+
+                # Always create or update Freelance Team (TeamMember) profile
+                TeamMember.objects.update_or_create(
+                    name=obj.name,
+                    defaults={
+                        'email': obj.email,
+                        'role': obj.role_applied,
+                        'is_freelancer': True,
+                        'standard_charge': 0.00,
+                        'average_rating': 5.0,
+                        'total_tasks_completed': 0,
+                    }
+                )
 
                 CareerApplication.objects.filter(id=obj.id).update(
                     hire_status='Hired',
