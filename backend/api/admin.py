@@ -279,6 +279,8 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     team_category=team_category,
                     assigned_services_list=assigned_services_list,
                 )
+                # Mark as handled so the post_save signal skips re-processing
+                obj._admin_handled = True
                 messages.success(request, f"Account created and email sent successfully to {obj.email}!")
 
             except Exception as e:

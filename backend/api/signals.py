@@ -321,7 +321,16 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
     Triggered when a CareerApplication is saved with hire_status == 'Hired' AND send_hired_email == True.
     Routes the new hire to Core Team (UserProfile only) or Freelancer Team (TeamMember + services).
     Password is always set via set_password() to guarantee correct hashing.
+
+    GUARD: If admin.py save_model already processed this record (sets _admin_handled=True on
+    the instance), skip here to prevent a second password being generated and overwriting the
+    one that was already emailed to the candidate.
     """
+    # Skip signal processing if admin.save_model already handled this hiring event
+    if getattr(instance, '_admin_handled', False):
+        logger.info(f"[SIGNAL SKIP] admin.save_model already handled hiring for {instance.email} — signal skipped.")
+        return
+
     if instance.hire_status == 'Hired' and instance.send_hired_email:
         try:
             user_exists = User.objects.filter(email=instance.email).exists()

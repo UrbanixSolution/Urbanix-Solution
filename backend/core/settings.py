@@ -246,13 +246,13 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',   # authenticated requests
     ],
     'DEFAULT_THROTTLE_RATES': {
-        # Global baselines — generous enough not to block normal browsing.
-        'anon': '5/min',    # 5 requests/min for anonymous (public API) traffic
-        'user': '50/min',   # 50 requests/min for authenticated users
-        # Per-view overrides — tighter limits for sensitive form endpoints.
-        'contact_submission': '3/hour',
-        'career_submission':  '3/day',
-        'captcha_generate':   '30/hour',
+        # Relaxed limits for testing — tighten before final production deployment
+        'anon': '200/min',    # was 5/min — raised for API testing
+        'user': '500/min',    # was 50/min — raised for authenticated testing
+        # Per-view overrides — relaxed while debugging
+        'contact_submission': '100/hour',
+        'career_submission':  '50/day',
+        'captcha_generate':   '200/hour',
     },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
