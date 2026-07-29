@@ -1,6 +1,3 @@
-from django.utils import timezone
-from datetime import timedelta
-from django.db.models import Q
 from rest_framework import serializers
 from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest, UserProfile
 
@@ -127,35 +124,7 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
             'cover_letter',
             'created_at',
         ]
-
-    def validate(self, attrs):
-        raw_email = attrs.get('email')
-        raw_phone = attrs.get('phone')
-
-        email = raw_email.strip().lower() if raw_email and isinstance(raw_email, str) and raw_email.strip() else None
-        phone = raw_phone.strip() if raw_phone and isinstance(raw_phone, str) and raw_phone.strip() else None
-
-        query = Q()
-        if email:
-            query |= Q(email__iexact=email)
-        if phone:
-            query |= Q(phone=phone)
-
-        # Strict DB check: only query database if valid non-empty email or phone is provided
-        if query:
-            twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
-            existing_applications = CareerApplication.objects.filter(
-                query,
-                created_at__gte=twenty_four_hours_ago
-            )
-
-            # Check if actual returned rows length > 0
-            if existing_applications.exists():
-                raise serializers.ValidationError(
-                    "You have already submitted an application using this email or phone number in the last 24 hours. Please wait before applying again."
-                )
-
-        return attrs
+    # No duplicate validation — all submissions go directly to the database.
 
 
 class WebsiteFeedbackSerializer(serializers.ModelSerializer):
