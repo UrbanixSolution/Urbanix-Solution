@@ -1,3 +1,4 @@
+import logging
 import io
 import base64
 import random
@@ -8,6 +9,9 @@ from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
+from django.contrib.auth.models import User
 from rest_framework.throttling import AnonRateThrottle
 from django.db.models import Q
 from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, AgencyPartnerLead, CallbackRequest
