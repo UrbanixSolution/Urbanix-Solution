@@ -304,30 +304,38 @@ class AgencyLoginView(APIView):
                 ).first()
 
                 if matched_user:
+                    if not matched_user.is_active:
+                        matched_user.is_active = True
+                        matched_user.save()
+
                     user = authenticate(username=matched_user.username, password=password)
                     if not user:
                         logger.warning(f"[LOGIN FAILED] Password mismatch for user '{matched_user.username}' ({matched_user.email})")
                         print(f"[LOGIN FAILED] Password mismatch for user '{matched_user.username}'")
                         return Response(
-                            {"detail": "Invalid password. Please verify your password and try again."},
+                            {"detail": "Invalid Password. Please check your credentials or reset password in Admin."},
                             status=status.HTTP_401_UNAUTHORIZED
                         )
                 else:
                     logger.warning(f"[LOGIN FAILED] No user account found matching identifier '{login_input}'")
                     print(f"[LOGIN FAILED] No user found for '{login_input}'")
                     return Response(
-                        {"detail": "No account found matching that Employee ID/Username."},
+                        {"detail": "No account found matching that Employee ID or Username."},
                         status=status.HTTP_401_UNAUTHORIZED
                     )
             except Exception as e:
                 logger.exception(f"[LOGIN ERROR] Exception during authentication for '{login_input}': {e}")
                 print(f"[LOGIN ERROR] Exception: {e}")
 
-        if not user or not user.is_active:
+        if not user:
             return Response(
-                {"detail": "Invalid credentials or account is disabled."},
+                {"detail": "Invalid credentials or account access disabled."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+        if not user.is_active:
+            user.is_active = True
+            user.save()
 
         # Get or create UserProfile
         profile, created = UserProfile.objects.get_or_create(
@@ -372,6 +380,9 @@ class MagicLoginView(APIView):
         try:
             token = Token.objects.get(key=token_key)
             user = token.user
+            if not user.is_active:
+                user.is_active = True
+                user.save()
 
             profile, _ = UserProfile.objects.get_or_create(
                 user=user,
@@ -392,7 +403,7 @@ class MagicLoginView(APIView):
             })
         except Token.DoesNotExist:
             logger.warning(f"[MAGIC LOGIN FAILED] Invalid token '{token_key}'")
-            return Response({"detail": "Invalid or expired magic token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"detail": "Magic link token is invalid or expired. Please sign in manually."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class DashboardDataView(APIView):
