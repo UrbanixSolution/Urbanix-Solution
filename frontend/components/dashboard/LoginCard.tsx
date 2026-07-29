@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, UserCheck, ShieldCheck, ArrowRight, Sparkles, KeyRound, AlertCircle } from 'lucide-react';
+import { getApiBase } from '@/lib/api';
 
 interface LoginCardProps {
   onLoginSuccess: (employeeId: string, loginData?: any) => void;
@@ -22,7 +23,9 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
 
     if (magicToken) {
       setIsLoading(true);
-      fetch(`http://127.0.0.1:8000/api/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
+      const apiBase = getApiBase();
+      console.log('[Magic Login] Authenticating token:', magicToken);
+      fetch(`${apiBase}/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error('Invalid or expired magic link token.');
@@ -35,6 +38,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
           onLoginSuccess(empId, data);
         })
         .catch((err) => {
+          console.error('[Magic Login Error]:', err);
           setIsLoading(false);
           setErrorMessage('Magic link token is invalid or expired. Please sign in manually.');
         });
@@ -57,13 +61,18 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
 
     try {
-      // Call Django REST API Auth Endpoint
-      const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
+      const apiBase = getApiBase();
+      const loginUrl = `${apiBase}/auth/login/`;
+      console.log('[Login Attempt] Sending request to:', loginUrl, { username: employeeId.trim() });
+
+      // Call Django REST API Auth Endpoint with both username & employee_id for complete payload compatibility
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          username: employeeId.trim(),
           employee_id: employeeId.trim(),
           password: password.trim(),
         }),
@@ -71,16 +80,19 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Login Success] Authenticated:', data);
         setIsLoading(false);
         onLoginSuccess(employeeId.trim(), data);
       } else {
         const errData = await response.json().catch(() => ({}));
+        console.error('[Login Failed Response]:', response.status, errData);
         setIsLoading(false);
         setErrorMessage(errData.detail || 'Invalid Employee ID or Password. Access Denied.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('[Login Network Exception]:', err);
       setIsLoading(false);
-      setErrorMessage('Unable to connect to Authentication Server. Please verify backend service.');
+      setErrorMessage(err?.message || 'Unable to connect to Authentication Server. Please verify network or backend server.');
     }
   };
 

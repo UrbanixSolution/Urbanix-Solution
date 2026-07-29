@@ -268,34 +268,64 @@ from .serializers import UserProfileSerializer
 class AgencyLoginView(APIView):
     """
     POST /api/auth/login/
-    Authenticates employees by Employee ID (username) and password.
+    Authenticates employees by Employee ID / Username / Email and password.
     Returns user profile & dynamic RBAC permissions.
     """
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        employee_id = (request.data.get('employee_id') or request.data.get('username') or '').strip().upper()
-        password = request.data.get('password', '').strip()
+        login_input = (
+            request.data.get('username') or
+            request.data.get('employee_id') or
+            request.data.get('email') or
+            ''
+        ).strip()
+        password = str(request.data.get('password') or '').strip()
 
-        if not employee_id or not password:
+        logger.info(f"[LOGIN ATTEMPT] Initiated login for identifier: '{login_input}'")
+        print(f"[LOGIN ATTEMPT] Identifier: '{login_input}'")
+
+        if not login_input or not password:
             return Response(
-                {"detail": "Please provide both Employee ID and password."},
+                {"detail": "Please provide both Employee ID/Username and Password."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Authenticate user
-        user = authenticate(username=employee_id, password=password)
-        if not user:
-            # Also try matching case-insensitive username or email
-            try:
-                matched_user = User.objects.get(Q(username__iexact=employee_id) | Q(email__iexact=employee_id))
-                user = authenticate(username=matched_user.username, password=password)
-            except User.DoesNotExist:
-                user = None
+        # 1. Direct authentication attempt with exact username
+        user = authenticate(username=login_input, password=password)
 
+        # 2. Case-insensitive & Profile Employee ID fallback lookup if direct auth fails
         if not user:
+            try:
+                matched_user = User.objects.filter(
+                    Q(username__iexact=login_input) |
+                    Q(email__iexact=login_input) |
+                    Q(profile__employee_id__iexact=login_input)
+                ).first()
+
+                if matched_user:
+                    user = authenticate(username=matched_user.username, password=password)
+                    if not user:
+                        logger.warning(f"[LOGIN FAILED] Password mismatch for user '{matched_user.username}' ({matched_user.email})")
+                        print(f"[LOGIN FAILED] Password mismatch for user '{matched_user.username}'")
+                        return Response(
+                            {"detail": "Invalid password. Please verify your password and try again."},
+                            status=status.HTTP_401_UNAUTHORIZED
+                        )
+                else:
+                    logger.warning(f"[LOGIN FAILED] No user account found matching identifier '{login_input}'")
+                    print(f"[LOGIN FAILED] No user found for '{login_input}'")
+                    return Response(
+                        {"detail": "No account found matching that Employee ID/Username."},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+            except Exception as e:
+                logger.exception(f"[LOGIN ERROR] Exception during authentication for '{login_input}': {e}")
+                print(f"[LOGIN ERROR] Exception: {e}")
+
+        if not user or not user.is_active:
             return Response(
-                {"detail": "Invalid Employee ID or password. Please check your credentials."},
+                {"detail": "Invalid credentials or account is disabled."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -304,7 +334,7 @@ class AgencyLoginView(APIView):
             user=user,
             defaults={
                 'employee_id': user.username,
-                'role': 'Agency Director & Admin' if user.is_superuser else 'Senior Developer',
+                'role': 'Agency Director & Admin' if user.is_superuser else 'Team Member',
                 'department': 'Core Operations' if user.is_superuser else 'Engineering',
                 'can_view_finance': user.is_superuser,
                 'can_view_all_projects': user.is_superuser,
@@ -312,12 +342,15 @@ class AgencyLoginView(APIView):
             }
         )
 
+        logger.info(f"[LOGIN SUCCESS] User '{user.username}' ({user.email}) logged in successfully.")
+        print(f"[LOGIN SUCCESS] User '{user.username}' logged in successfully.")
+
         serializer = UserProfileSerializer(profile)
         return Response({
             "message": "Authentication successful",
             "token": f"session_{user.id}_{uuid.uuid4().hex[:12]}",
             "user": serializer.data,
-            "permissions": serializer.data['permissions']
+            "permissions": serializer.data.get('permissions', {})
         })
 
 
@@ -344,11 +377,12 @@ class MagicLoginView(APIView):
                 user=user,
                 defaults={
                     'employee_id': user.username,
-                    'role': 'Senior Developer',
+                    'role': 'Team Member',
                     'department': 'Engineering',
                 }
             )
 
+            logger.info(f"[MAGIC LOGIN SUCCESS] User '{user.username}' authenticated via magic token.")
             serializer = UserProfileSerializer(profile)
             return Response({
                 "message": "Magic link auto-login successful",
@@ -357,6 +391,7 @@ class MagicLoginView(APIView):
                 "permissions": serializer.data.get('permissions', {})
             })
         except Token.DoesNotExist:
+            logger.warning(f"[MAGIC LOGIN FAILED] Invalid token '{token_key}'")
             return Response({"detail": "Invalid or expired magic token."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
