@@ -120,9 +120,16 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ---------------------------------------------------------------------------
 # Database — PostgreSQL (Supabase / Production) / dj-database-url
 # ---------------------------------------------------------------------------
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError(
+        "CRITICAL DATABASE CONFIGURATION ERROR: 'DATABASE_URL' environment variable is missing or empty! "
+        "Application startup aborted. Please ensure DATABASE_URL is defined in your .env file."
+    )
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
+        default=DATABASE_URL,
         conn_max_age=600,
         conn_health_checks=True,
     )
