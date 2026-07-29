@@ -167,9 +167,10 @@ def send_update_credentials_email(email, name, role, employee_id, new_password):
 from rest_framework.authtoken.models import Token
 
 
-def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_password, magic_token=None):
+def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_password, magic_token=None, team_category='Freelancer Team', assigned_services_list='None assigned'):
     """
-    Sends responsive HTML onboarding email to hired candidate with Magic Link.
+    Sends responsive HTML onboarding email to hired candidate with Magic Link,
+    team assignment, and authorized services.
     """
     print(f"Attempting to send email to: {email}")
     logger.info(f"Attempting to send email to: {email}")
@@ -183,6 +184,14 @@ def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_pass
     subject = "Welcome to Urbanix Solution! You're Hired 🚀"
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online')
     to_email = [email]
+
+    # Colour-code team badge
+    team_badge_color = '#22d3ee' if team_category == 'Core Team' else '#a78bfa'
+    services_html = (
+        f'<span style="color:#f9a8d4;">{assigned_services_list}</span>'
+        if assigned_services_list != 'None assigned'
+        else '<span style="color:#6b7280;">None assigned</span>'
+    )
 
     html_content = f"""
 <!DOCTYPE html>
@@ -206,7 +215,7 @@ def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_pass
               Welcome to Urbanix Solution! You're Hired 🚀
             </h1>
             <p style="font-size: 13px; color: #9ca3af; margin: 0;">
-              Elite Digital & Tech Growth Partner
+              Elite Digital &amp; Tech Growth Partner
             </p>
           </div>
 
@@ -218,9 +227,20 @@ def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_pass
             We are thrilled to officially welcome you to the <strong>Urbanix Solution</strong> team as a <strong style="color: #22d3ee;">{role_applied}</strong>! After thoroughly reviewing your application and background, we are highly impressed with your capabilities and excited to work together.
           </p>
 
+          <!-- Team Assignment Box -->
+          <div style="background: rgba(6,182,212,0.06); border-left: 4px solid {team_badge_color}; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+            <p style="font-size: 13px; line-height: 1.6; color: #38bdf8; margin: 0 0 8px 0; font-weight: 500;">
+              🏢 <strong>Team Assignment:</strong><br>
+              You have been assigned to: <span style="color: {team_badge_color}; font-weight: 700; font-size: 14px;">{team_category}</span>
+            </p>
+            <p style="font-size: 13px; line-height: 1.6; color: #94a3b8; margin: 0;">
+              🛠️ <strong>Your authorized services:</strong> {services_html}
+            </p>
+          </div>
+
           <!-- Vetted Network Expectation Box -->
-          <div style="background: rgba(6,182,212,0.06); border-left: 4px solid #06b6d4; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
-            <p style="font-size: 13px; line-height: 1.6; color: #38bdf8; margin: 0; font-weight: 500;">
+          <div style="background: rgba(167,139,250,0.06); border-left: 4px solid #7c3aed; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+            <p style="font-size: 13px; line-height: 1.6; color: #c4b5fd; margin: 0; font-weight: 500;">
               💡 <strong>Vetted Talent Network Expectation:</strong><br>
               You are now officially part of our vetted network. Whenever a new client project arrives that perfectly matches your skillset, we will assign it to you and notify you immediately.
             </p>
@@ -238,7 +258,7 @@ def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_pass
             </div>
 
             <div style="margin-bottom: 12px; font-family: monospace; font-size: 14px; color: #d1d5db;">
-              <span style="color: #6b7280;">Employee ID:</span> 
+              <span style="color: #6b7280;">Username (Employee ID):</span> 
               <span style="color: #22d3ee; font-weight: bold; font-size: 16px; background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 6px;">{employee_id}</span>
             </div>
 
@@ -299,6 +319,8 @@ def send_hired_onboarding_email(email, name, role_applied, employee_id, raw_pass
 def handle_hired_candidate_automation(sender, instance, created, **kwargs):
     """
     Triggered when a CareerApplication is saved with hire_status == 'Hired' AND send_hired_email == True.
+    Routes the new hire to Core Team (UserProfile only) or Freelancer Team (TeamMember + services).
+    Password is always set via set_password() to guarantee correct hashing.
     """
     if instance.hire_status == 'Hired' and instance.send_hired_email:
         try:
@@ -311,14 +333,16 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                 first_name = name_parts[0]
                 last_name = name_parts[1] if len(name_parts) > 1 else ''
 
-                user = User.objects.create_user(
+                # --- AUTH FIX: Use set_password() to guarantee proper hashing ---
+                user = User(
                     username=employee_id,
                     email=instance.email,
-                    password=raw_password,
                     first_name=first_name,
                     last_name=last_name,
                     is_staff=True,
                 )
+                user.set_password(raw_password)  # hashes correctly
+                user.save()
 
                 dept = 'Engineering'
                 r_lower = instance.role_applied.lower()
@@ -341,21 +365,28 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
                 profile = UserProfile.objects.filter(user=user).first()
                 employee_id = profile.employee_id if profile else user.username
                 raw_password = generate_secure_password(8)
-                user.set_password(raw_password)
+                user.set_password(raw_password)  # explicit hash
                 user.save()
 
-            # Always create or update Freelance Team (TeamMember) profile
-            TeamMember.objects.update_or_create(
-                name=instance.name,
-                defaults={
-                    'email': instance.email,
-                    'role': instance.role_applied,
-                    'is_freelancer': True,
-                    'standard_charge': 0.00,
-                    'average_rating': 5.0,
-                    'total_tasks_completed': 0,
-                }
-            )
+            # --- PROFILE ROUTING based on team_category ---
+            team_category = instance.team_category or 'Freelancer Team'
+            assigned_services_qs = instance.assigned_services.all()
+            assigned_services_list = ', '.join(s.title for s in assigned_services_qs) if assigned_services_qs.exists() else 'None assigned'
+
+            if team_category == 'Freelancer Team':
+                freelancer_profile, _ = TeamMember.objects.update_or_create(
+                    name=instance.name,
+                    defaults={
+                        'email': instance.email,
+                        'role': instance.role_applied,
+                        'is_freelancer': True,
+                        'standard_charge': 0.00,
+                        'average_rating': 5.0,
+                        'total_tasks_completed': 0,
+                    }
+                )
+                freelancer_profile.services.set(assigned_services_qs)
+            # For 'Core Team': UserProfile already created above; no TeamMember row needed.
 
             CareerApplication.objects.filter(id=instance.id).update(
                 hire_status='Hired',
@@ -365,14 +396,16 @@ def handle_hired_candidate_automation(sender, instance, created, **kwargs):
             # Generate Token for Magic Link
             token_obj, _ = Token.objects.get_or_create(user=user)
 
-            # Send Email
+            # Send Email with team & service context
             send_hired_onboarding_email(
                 email=instance.email,
                 name=instance.name,
                 role_applied=instance.role_applied,
                 employee_id=employee_id,
                 raw_password=raw_password,
-                magic_token=token_obj.key
+                magic_token=token_obj.key,
+                team_category=team_category,
+                assigned_services_list=assigned_services_list,
             )
 
         except Exception as e:

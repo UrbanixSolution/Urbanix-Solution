@@ -169,6 +169,10 @@ class CareerApplicationAdmin(admin.ModelAdmin):
         ('Application', {
             'fields': ('role_applied', 'state', 'district', 'town', 'portfolio_link', 'cover_letter', 'created_at'),
         }),
+        ('Hiring Decision', {
+            'fields': ('team_category', 'assigned_services'),
+            'description': 'Select the team category and (for Freelancers) the services they are authorized for BEFORE checking the email box below.',
+        }),
         ('Hiring Pipeline Status', {
             'fields': ('hire_status', 'is_converted', 'send_hired_email'),
             'description': 'Setting Hire Status to "Hired" and checking "send_hired_email" generates Employee credentials and dispatches the Hired email.',
@@ -197,14 +201,16 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     first_name = name_parts[0]
                     last_name = name_parts[1] if len(name_parts) > 1 else ''
 
-                    user = User.objects.create_user(
+                    # --- AUTH FIX: create_user() hashes the password correctly ---
+                    user = User(
                         username=employee_id,
                         email=obj.email,
-                        password=raw_password,
                         first_name=first_name,
                         last_name=last_name,
                         is_staff=True,
                     )
+                    user.set_password(raw_password)  # explicit hash
+                    user.save()
 
                     dept = 'Engineering'
                     r_lower = obj.role_applied.lower()
@@ -227,21 +233,31 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     profile = UserProfile.objects.filter(user=user).first()
                     employee_id = profile.employee_id if profile else user.username
                     raw_password = generate_secure_password(8)
-                    user.set_password(raw_password)
+                    user.set_password(raw_password)  # explicit hash
                     user.save()
 
-                # Always create or update Freelance Team (TeamMember) profile
-                TeamMember.objects.update_or_create(
-                    name=obj.name,
-                    defaults={
-                        'email': obj.email,
-                        'role': obj.role_applied,
-                        'is_freelancer': True,
-                        'standard_charge': 0.00,
-                        'average_rating': 5.0,
-                        'total_tasks_completed': 0,
-                    }
-                )
+                # --- PROFILE ROUTING based on team_category ---
+                team_category = obj.team_category or 'Freelancer Team'
+                assigned_services_qs = obj.assigned_services.all()
+                assigned_services_list = ', '.join(s.title for s in assigned_services_qs) if assigned_services_qs.exists() else 'None assigned'
+
+                if team_category == 'Freelancer Team':
+                    # Create / update Freelancer Team (TeamMember) profile
+                    freelancer_profile, _ = TeamMember.objects.update_or_create(
+                        name=obj.name,
+                        defaults={
+                            'email': obj.email,
+                            'role': obj.role_applied,
+                            'is_freelancer': True,
+                            'standard_charge': 0.00,
+                            'average_rating': 5.0,
+                            'total_tasks_completed': 0,
+                        }
+                    )
+                    # Sync authorized services to the Freelancer profile
+                    freelancer_profile.services.set(assigned_services_qs)
+                # For 'Core Team', a UserProfile (already created above) is the profile.
+                # No TeamMember row is created — Core Team members are staff users only.
 
                 CareerApplication.objects.filter(id=obj.id).update(
                     hire_status='Hired',
@@ -252,14 +268,16 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                 from rest_framework.authtoken.models import Token
                 token_obj, _ = Token.objects.get_or_create(user=user)
 
-                # Send Hired Email with Magic Link
+                # Send Hired Email with team & service context
                 send_hired_onboarding_email(
                     email=obj.email,
                     name=obj.name,
                     role_applied=obj.role_applied,
                     employee_id=employee_id,
                     raw_password=raw_password,
-                    magic_token=token_obj.key
+                    magic_token=token_obj.key,
+                    team_category=team_category,
+                    assigned_services_list=assigned_services_list,
                 )
                 messages.success(request, f"Account created and email sent successfully to {obj.email}!")
 

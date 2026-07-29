@@ -209,6 +209,21 @@ class CareerApplication(models.Model):
         default=False,
         help_text='Tick when this applicant has been hired and added as a CRM Team Member.'
     )
+    team_category = models.CharField(
+        max_length=50,
+        choices=[
+            ('Core Team', 'Core Team'),
+            ('Freelancer Team', 'Freelancer Team'),
+        ],
+        null=True,
+        blank=True,
+        help_text="Select which team this hired applicant will join."
+    )
+    assigned_services = models.ManyToManyField(
+        'Service',
+        blank=True,
+        help_text="Select services this applicant will have access to (mainly for Freelancers)."
+    )
     send_hired_email = models.BooleanField(
         default=False,
         help_text="Check this box and save to generate credentials and send the official Hired email to the applicant."

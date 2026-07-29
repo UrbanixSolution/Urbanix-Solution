@@ -7,6 +7,7 @@ inbound contact leads, and career applications.
 
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from api.models import Service
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +42,11 @@ class TeamMember(models.Model):
         default=0,
         validators=[MinValueValidator(0)],
         help_text='Running count of tasks marked Completed and assigned to this member.'
+    )
+    services = models.ManyToManyField(
+        Service,
+        blank=True,
+        help_text="Services this freelancer is authorized to handle."
     )
     send_update_email = models.BooleanField(
         default=False,

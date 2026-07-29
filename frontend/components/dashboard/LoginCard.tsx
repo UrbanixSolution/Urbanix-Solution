@@ -109,7 +109,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
             <img
               src="/urbanix-logo.png"
               alt="Urbanix Solution Logo"
-              className="w-10 h-10 object-contain rounded-xl shadow-lg shadow-cyan-500/25 border border-cyan-500/30"
+              className="w-10 h-10 object-contain"
             />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
               URBANIX <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">CRM</span>
@@ -149,7 +149,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ onLoginSuccess }) => {
                 type="text"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
-                placeholder="e.g. Rahu/2807/01"
+                placeholder="Enter your Employee ID"
                 required
                 className="w-full pl-10 pr-4 py-3 bg-gray-950/90 border border-gray-800 rounded-xl text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
               />
