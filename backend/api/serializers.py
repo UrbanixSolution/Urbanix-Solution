@@ -129,9 +129,11 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        email = attrs.get('email', '').strip().lower() if attrs.get('email') else None
-        phone = attrs.get('phone', '').strip() if attrs.get('phone') else None
-        twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
+        raw_email = attrs.get('email')
+        raw_phone = attrs.get('phone')
+
+        email = raw_email.strip().lower() if raw_email and isinstance(raw_email, str) and raw_email.strip() else None
+        phone = raw_phone.strip() if raw_phone and isinstance(raw_phone, str) and raw_phone.strip() else None
 
         query = Q()
         if email:
@@ -139,16 +141,20 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
         if phone:
             query |= Q(phone=phone)
 
+        # Strict DB check: only query database if valid non-empty email or phone is provided
         if query:
-            duplicate_exists = CareerApplication.objects.filter(
+            twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
+            existing_applications = CareerApplication.objects.filter(
                 query,
                 created_at__gte=twenty_four_hours_ago
-            ).exists()
+            )
 
-            if duplicate_exists:
+            # Check if actual returned rows length > 0
+            if existing_applications.exists():
                 raise serializers.ValidationError(
                     "You have already submitted an application using this email or phone number in the last 24 hours. Please wait before applying again."
                 )
+
         return attrs
 
 

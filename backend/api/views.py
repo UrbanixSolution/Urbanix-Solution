@@ -172,12 +172,12 @@ class ContactLeadCreateView(generics.CreateAPIView):
 class CareerApplicationCreateView(generics.CreateAPIView):
     """
     POST /api/career/
-    Saves incoming career applications with self-hosted text CAPTCHA validation and rate limiting.
+    Saves incoming career applications with self-hosted text CAPTCHA validation. No IP rate limiting.
     """
     queryset = CareerApplication.objects.all()
     serializer_class = CareerApplicationSerializer
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [CareerSubmissionThrottle]
+    throttle_classes = []
 
     def create(self, request, *args, **kwargs):
         captcha_id = request.data.get('captcha_id') or request.data.get('captchaId')

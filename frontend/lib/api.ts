@@ -338,12 +338,6 @@ export async function submitCareerForm(payload: CareerPayload): Promise<{ succes
     });
     const data = await res.json();
     if (!res.ok) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: data?.detail || 'You have already submitted an application recently. Please try again later.',
-        };
-      }
       const errorMsg =
         data?.non_field_errors?.[0] ||
         data?.detail ||
