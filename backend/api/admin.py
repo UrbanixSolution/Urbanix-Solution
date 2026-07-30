@@ -321,7 +321,16 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
 
     def delete_model(self, request, obj):
-        """Hard delete single CareerApplication record and cleanup linked User & TeamMember records."""
+        """Hard delete single CareerApplication record and cleanup linked User & TeamMember records.
+        PROTECTION: Blocks accidental deletion of Pending applications.
+        """
+        if obj.hire_status == 'Pending':
+            messages.error(
+                request,
+                f"⛔ Cannot delete '{obj.name}' — this application is still PENDING. "
+                "Change the status to Rejected first before deleting."
+            )
+            return
         email = obj.email
         obj.delete()
         if email:
@@ -329,9 +338,24 @@ class CareerApplicationAdmin(admin.ModelAdmin):
             TeamMember.objects.filter(email__iexact=email.strip()).delete()
 
     def delete_queryset(self, request, queryset):
-        """Hard delete selected CareerApplication records and cleanup linked User & TeamMember records."""
-        emails = list(queryset.values_list('email', flat=True))
-        queryset.delete()
+        """Hard delete selected CareerApplication records and cleanup linked User & TeamMember records.
+        PROTECTION: Pending applications are skipped and a warning is shown.
+        """
+        # Separate pending (protected) from deletable records
+        pending = queryset.filter(hire_status='Pending')
+        deletable = queryset.exclude(hire_status='Pending')
+
+        if pending.exists():
+            pending_names = ', '.join(pending.values_list('name', flat=True)[:5])
+            messages.warning(
+                request,
+                f"⛔ {pending.count()} PENDING application(s) were PROTECTED and NOT deleted: "
+                f"{pending_names}. Only Rejected/Hired records were removed."
+            )
+
+        # Only delete non-pending records
+        emails = list(deletable.values_list('email', flat=True))
+        deletable.delete()
         for email in emails:
             if email:
                 User.objects.filter(email__iexact=email.strip()).delete()
