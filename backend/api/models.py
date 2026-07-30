@@ -192,7 +192,8 @@ class CareerApplication(models.Model):
     name = models.CharField(max_length=200)
     email = models.EmailField()
     phone = models.CharField(max_length=30)
-    role_applied = models.CharField(max_length=200, choices=ROLE_CHOICES, default='Full-Stack Developer')
+    role_applied = models.CharField(max_length=200, blank=False, default='Full-Stack Developer', help_text='Primary skill or role applied for.')
+
     state = models.CharField(max_length=100, blank=True, help_text="State")
     district = models.CharField(max_length=100, blank=True, help_text="District")
     town = models.CharField(max_length=100, blank=True, help_text="Town or City")

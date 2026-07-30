@@ -124,9 +124,12 @@ export default function CareerForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!captchaInput.trim()) {
-      setErrorMessage('Please enter the CAPTCHA characters shown in the image.')
-      return
+    // Validate CAPTCHA only if it successfully loaded
+    if (captchaImage && !captchaError) {
+      if (!captchaInput.trim()) {
+        setErrorMessage('Please enter the CAPTCHA characters shown in the image.')
+        return
+      }
     }
 
     if (formData.role === 'Other' && !formData.otherRole.trim()) {
@@ -176,9 +179,10 @@ export default function CareerForm() {
           portfolioUrl: '',
           motivation: '',
         })
+        setCaptchaInput('')
       } else {
         setStatus('error')
-        const msg = res.error || 'Failed to submit application. Please check fields.'
+        const msg = res.error || 'Submission failed. Please check all fields and try again.'
         setErrorMessage(msg)
         setToast({
           id: Date.now().toString(),
@@ -186,10 +190,13 @@ export default function CareerForm() {
           title: 'Submission Error',
           message: msg,
         })
+        // Refresh CAPTCHA on error so user gets a new challenge
+        loadCaptcha()
       }
     } catch (err: any) {
+      console.error('[CareerForm handleSubmit error]:', err)
       setStatus('error')
-      const msg = err?.message || 'Failed to submit application. Please try again.'
+      const msg = err?.message || 'Cannot connect to server. Please check your internet connection.'
       setErrorMessage(msg)
       setToast({
         id: Date.now().toString(),
@@ -197,8 +204,6 @@ export default function CareerForm() {
         title: 'Connection Error',
         message: msg,
       })
-    } finally {
-      // Automatically generate a new CAPTCHA after submission attempt
       loadCaptcha()
     }
   }
@@ -562,11 +567,11 @@ export default function CareerForm() {
                 </div>
               )}
 
-              {/* Submit Button */}
+              {/* Submit Button — only disabled while actively submitting, never permanently blocked by CAPTCHA load failure */}
               <button
                 type="submit"
                 id="career-submit-btn"
-                disabled={status === 'submitting' || !captchaInput.trim() || captchaError || !captchaImage}
+                disabled={status === 'submitting' || (!!captchaImage && !captchaError && !captchaInput.trim())}
                 className="btn-solid w-full justify-center py-3.5 text-sm font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {status === 'submitting' ? (

@@ -338,21 +338,39 @@ export async function submitCareerForm(payload: CareerPayload): Promise<{ succes
     });
     const data = await res.json();
     if (!res.ok) {
+      console.error('[API Career Submit Error Response]:', data);
+      // Handle rate limiting
+      if (res.status === 429) {
+        return { success: false, error: data?.detail || 'Too many submissions. Please try again later.' };
+      }
+      // Extract DRF field-level or non-field errors comprehensively
       const errorMsg =
         data?.non_field_errors?.[0] ||
         data?.detail ||
+        data?.error ||
+        data?.captcha_input?.[0] ||
+        data?.captcha_id?.[0] ||
+        data?.name?.[0] ||
         data?.email?.[0] ||
         data?.phone?.[0] ||
-        'Submission failed. Please check form fields.';
-      console.error('[API Career Submit Error Response]:', data);
+        data?.role_applied?.[0] ||
+        data?.cover_letter?.[0] ||
+        data?.portfolio_link?.[0] ||
+        data?.state?.[0] ||
+        // If DRF returned a generic object of errors, show first one found
+        (typeof data === 'object'
+          ? Object.values(data).flat().find((v) => typeof v === 'string') as string | undefined
+          : undefined) ||
+        `Submission failed (${res.status}). Please check your details and try again.`;
       return { success: false, error: errorMsg };
     }
     return { success: true, data };
   } catch (err: any) {
     console.error('[API Career Submit Exception]: Failed to fetch target URL:', targetUrl, err);
-    return { success: false, error: err.message || 'Failed to fetch Django backend. Please ensure backend is running.' };
+    return { success: false, error: err.message || 'Cannot connect to server. Please check your internet connection and try again.' };
   }
 }
+
 
 /**
  * Fetch active services from GET /api/services/
