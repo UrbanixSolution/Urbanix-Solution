@@ -24,21 +24,27 @@ from .models import (
 class TeamMemberAdmin(admin.ModelAdmin):
     """Admin view for agency team members and freelancers."""
 
-    list_display = ('name', 'email', 'role', 'is_freelancer', 'send_update_email', 'standard_charge', 'average_rating', 'total_tasks_completed')
+    list_display  = ('name', 'email', 'phone_number', 'role', 'state', 'district', 'is_freelancer', 'send_update_email', 'standard_charge', 'average_rating', 'total_tasks_completed')
     list_editable = ('send_update_email',)
-    list_filter  = ('is_freelancer', 'send_update_email', 'role')
-    search_fields = ('name', 'email', 'role')
-    ordering = ('name',)
+    list_filter   = ('is_freelancer', 'send_update_email', 'role', 'state')
+    search_fields = ('name', 'email', 'phone_number', 'role', 'state', 'district', 'town')
+    ordering      = ('name',)
 
     fieldsets = (
         ('Identity', {
-            'fields': ('name', 'email', 'role', 'is_freelancer', 'send_update_email'),
+            'fields': ('name', 'email', 'role', 'is_freelancer', 'services', 'send_update_email'),
+        }),
+        ('Application Details', {
+            'fields': ('phone_number', 'state', 'district', 'town', 'portfolio_link', 'why_join_us'),
+            'description': 'Information copied automatically from the original Career Application when this person was accepted.',
+            'classes': ('collapse',),
         }),
         ('Financials & Performance', {
             'fields': ('standard_charge', 'average_rating', 'total_tasks_completed'),
             'description': 'Financial and performance metrics for this team member.',
         }),
     )
+
 
 
 # ---------------------------------------------------------------------------

@@ -270,6 +270,7 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
                 if team_category == 'Freelancer Team':
                     # ROUTE TO FREELANCE TEAM (crm.TeamMember)
+                    # Transfer all applicant detail fields so the profile is complete in Admin.
                     freelancer_profile, _ = TeamMember.objects.update_or_create(
                         email=obj.email.strip().lower(),
                         defaults={
@@ -279,6 +280,13 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                             'standard_charge': 0.00,
                             'average_rating': 5.0,
                             'total_tasks_completed': 0,
+                            # ── Application Details ───────────────────────
+                            'phone_number':  (obj.phone or '').strip() or None,
+                            'state':         (obj.state or '').strip() or None,
+                            'district':      (obj.district or '').strip() or None,
+                            'town':          (obj.town or '').strip() or None,
+                            'portfolio_link': (obj.portfolio_link or '').strip() or None,
+                            'why_join_us':   (obj.cover_letter or '').strip() or None,
                         }
                     )
                     if assigned_services_qs.exists():

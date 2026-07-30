@@ -23,7 +23,7 @@ class TeamMember(models.Model):
         null=True,
         help_text="Email address for notifications and credential updates."
     )
-    role = models.CharField(max_length=100, help_text='e.g. "Frontend Developer", "Designer"')
+    role = models.CharField(max_length=200, help_text='e.g. "Frontend Developer", "Designer"')
     is_freelancer = models.BooleanField(
         default=False,
         help_text='Tick if this person is a freelancer rather than a full-time employee.'
@@ -31,6 +31,7 @@ class TeamMember(models.Model):
     standard_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
+        default=0.00,
         help_text='Standard per-task or per-hour charge paid to this member (in your base currency).'
     )
     average_rating = models.FloatField(
@@ -53,6 +54,43 @@ class TeamMember(models.Model):
         help_text="Check this to generate a new password and email the user with their updated role and new credentials."
     )
 
+    # ── Application Details (copied from CareerApplication on acceptance) ─────
+    phone_number = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        help_text="Phone / WhatsApp number from the original career application."
+    )
+    state = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="State as submitted in the career application."
+    )
+    district = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="District as submitted in the career application."
+    )
+    town = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Town / City as submitted in the career application."
+    )
+    portfolio_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Portfolio, resume, or work-sample URL from the career application."
+    )
+    why_join_us = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Applicant's motivation / cover letter from the career application."
+    )
+
     class Meta:
         ordering = ['name']
         verbose_name = 'Freelancer'
@@ -61,6 +99,8 @@ class TeamMember(models.Model):
     def __str__(self):
         tag = 'Freelancer' if self.is_freelancer else 'Employee'
         return f'{self.name} - {self.role} ({tag})'
+
+
 
 
 # ---------------------------------------------------------------------------
