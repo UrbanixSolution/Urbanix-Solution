@@ -1,5 +1,12 @@
+from django.db.models import Q
 from rest_framework import serializers
-from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest, UserProfile
+from .models import (
+    Service, Category, PortfolioProject, ContactLead, CareerApplication,
+    WebsiteFeedback, PricingTier, AgencyPartnerLead, CallbackRequest, UserProfile,
+    CallPartnerApplication, ClientLead,
+)
+
+
 
 
 class PricingTierSerializer(serializers.ModelSerializer):
@@ -88,7 +95,7 @@ class PortfolioProjectSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             # Fallback for relative paths if request is not in context
             raw_url = obj.image.url
-            if raw_url.startsWith('/'):
+            if raw_url.startswith('/'):
                 return f"http://127.0.0.1:8000{raw_url}"
             return raw_url
         return obj.image_url or ''
@@ -107,6 +114,22 @@ class ContactLeadSerializer(serializers.ModelSerializer):
             'created_at',
         ]
 
+    def validate(self, attrs):
+        email = (attrs.get('email') or '').strip()
+        phone = (attrs.get('phone') or '').strip()
+
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if phone:
+            query |= Q(phone__iexact=phone)
+
+        if query and ContactLead.objects.filter(query).exists():
+            raise serializers.ValidationError(
+                "A contact enquiry with this email or phone number is already registered."
+            )
+        return attrs
+
 
 class CareerApplicationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -124,7 +147,22 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
             'cover_letter',
             'created_at',
         ]
-    # No duplicate validation — all submissions go directly to the database.
+
+    def validate(self, attrs):
+        email = (attrs.get('email') or '').strip()
+        phone = (attrs.get('phone') or '').strip()
+
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if phone:
+            query |= Q(phone__iexact=phone)
+
+        if query and CareerApplication.objects.filter(query).exists():
+            raise serializers.ValidationError(
+                "An application with this email or phone number is already registered."
+            )
+        return attrs
 
 
 class WebsiteFeedbackSerializer(serializers.ModelSerializer):
@@ -160,6 +198,23 @@ class AgencyPartnerLeadSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate(self, attrs):
+        email = (attrs.get('email') or '').strip()
+        whatsapp = (attrs.get('whatsapp_number') or '').strip()
+
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if whatsapp:
+            query |= Q(whatsapp_number__iexact=whatsapp)
+
+        if query and AgencyPartnerLead.objects.filter(query).exists():
+            raise serializers.ValidationError(
+                "An agency partner application with this email or WhatsApp number is already registered."
+            )
+        return attrs
+
 
 
 class CallbackRequestSerializer(serializers.ModelSerializer):
@@ -201,9 +256,13 @@ class CallbackRequestSerializer(serializers.ModelSerializer):
         if not phone_number:
             raise serializers.ValidationError({"phone_number": "Phone number is required."})
 
+        if CallbackRequest.objects.filter(phone_number__iexact=phone_number, is_completed=False).exists():
+            raise serializers.ValidationError({"phone_number": "A pending callback request for this phone number already exists."})
+
         attrs['full_name'] = full_name
         attrs['phone_number'] = phone_number
         return attrs
+
 
 
 from .models import DashboardPermission
@@ -260,4 +319,168 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'can_view_project_timeline': card_perm.can_view_project_timeline or is_admin,
             'can_view_priority_queue': card_perm.can_view_priority_queue or is_admin,
         }
+
+
+# ---------------------------------------------------------------------------
+# Agency CRM Portal — Assigned Work Serializers
+# ---------------------------------------------------------------------------
+
+from .models import AssignedProject, AssignedTask, AssignedPayout
+
+
+class AssignedProjectSerializer(serializers.ModelSerializer):
+    """
+    Serializes AssignedProject to the camelCase shape expected by the
+    frontend Project TypeScript interface.
+    """
+    id = serializers.SerializerMethodField()
+    clientName = serializers.CharField(source='client_name', read_only=True)
+    progressPercent = serializers.IntegerField(source='progress_percent', read_only=True)
+    deliverableType = serializers.CharField(source='deliverable_type', read_only=True)
+    payoutEst = serializers.IntegerField(source='payout_est', read_only=True)
+    teamMembers = serializers.JSONField(source='team_members', read_only=True)
+
+    class Meta:
+        model = AssignedProject
+        fields = [
+            'id',
+            'title',
+            'clientName',
+            'category',
+            'status',
+            'progressPercent',
+            'deadline',
+            'teamMembers',
+            'deliverableType',
+            'priority',
+            'payoutEst',
+        ]
+
+    def get_id(self, obj):
+        return f'prj-{obj.pk}'
+
+
+class AssignedTaskSerializer(serializers.ModelSerializer):
+    """
+    Serializes AssignedTask to the camelCase shape expected by the
+    frontend TaskItem TypeScript interface.
+    """
+    id = serializers.SerializerMethodField()
+    projectId = serializers.SerializerMethodField()
+    projectName = serializers.SerializerMethodField()
+    dueDate = serializers.CharField(source='due_date', read_only=True)
+    estimatedHours = serializers.IntegerField(source='estimated_hours', read_only=True)
+
+    class Meta:
+        model = AssignedTask
+        fields = [
+            'id',
+            'title',
+            'projectId',
+            'projectName',
+            'priority',
+            'status',
+            'dueDate',
+            'estimatedHours',
+        ]
+
+    def get_id(self, obj):
+        return f'tsk-{obj.pk}'
+
+    def get_projectId(self, obj):
+        return f'prj-{obj.project_id}' if obj.project_id else ''
+
+    def get_projectName(self, obj):
+        return obj.project.title if obj.project else ''
+
+
+class AssignedPayoutSerializer(serializers.ModelSerializer):
+    """
+    Serializes AssignedPayout to the camelCase shape expected by the
+    frontend PayoutRecord TypeScript interface.
+    """
+    id = serializers.SerializerMethodField()
+    invoiceNo = serializers.CharField(source='invoice_no', read_only=True)
+    projectTitle = serializers.CharField(source='project_title', read_only=True)
+    baseAmount = serializers.IntegerField(source='base_amount', read_only=True)
+    bonusAmount = serializers.IntegerField(source='bonus_amount', read_only=True)
+    totalAmount = serializers.IntegerField(source='total_amount', read_only=True)
+    dueDate = serializers.CharField(source='due_date', read_only=True)
+    paidDate = serializers.CharField(source='paid_date', read_only=True)
+
+    class Meta:
+        model = AssignedPayout
+        fields = [
+            'id',
+            'invoiceNo',
+            'month',
+            'projectTitle',
+            'baseAmount',
+            'bonusAmount',
+            'totalAmount',
+            'status',
+            'dueDate',
+            'paidDate',
+        ]
+
+    def get_id(self, obj):
+        return f'pay-{obj.pk}'
+
+
+# ===========================================================================
+# Call Partner Program Serializers
+# ===========================================================================
+
+class CallPartnerApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CallPartnerApplication
+        fields = [
+            'id',
+            'full_name',
+            'email',
+            'whatsapp_number',
+            'status',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'status', 'created_at']
+
+    def validate(self, attrs):
+        email = (attrs.get('email') or '').strip()
+        whatsapp = (attrs.get('whatsapp_number') or '').strip()
+
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if whatsapp:
+            query |= Q(whatsapp_number__iexact=whatsapp)
+
+        if query and CallPartnerApplication.objects.filter(query).exists():
+            raise serializers.ValidationError(
+                "An application with this email or WhatsApp number is already registered."
+            )
+        return attrs
+
+
+class ClientLeadSerializer(serializers.ModelSerializer):
+    partner_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ClientLead
+        fields = [
+            'id',
+            'partner',
+            'partner_name',
+            'client_name',
+            'client_phone',
+            'project_type',
+            'discussed_price',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'partner', 'partner_name', 'status', 'created_at', 'updated_at']
+
+    def get_partner_name(self, obj):
+        return obj.partner.get_full_name() or obj.partner.username
+
 

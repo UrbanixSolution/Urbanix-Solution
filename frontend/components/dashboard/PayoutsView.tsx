@@ -135,46 +135,58 @@ export const PayoutsView: React.FC<PayoutsViewProps> = ({ payouts }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60 font-medium">
-              {payouts.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-950/40 transition-colors">
-                  <td className="py-3.5 px-3 font-mono text-cyan-400 font-bold">
-                    {item.invoiceNo}
-                  </td>
-                  <td className="py-3.5 px-3 text-white font-medium">{item.month}</td>
-                  <td className="py-3.5 px-3 text-gray-300 max-w-xs truncate">
-                    {item.projectTitle}
-                  </td>
-                  <td className="py-3.5 px-3 font-mono text-gray-300">
-                    ₹{item.baseAmount.toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3.5 px-3 font-mono text-emerald-400">
-                    +₹{item.bonusAmount.toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3.5 px-3 font-mono font-bold text-white text-sm">
-                    ₹{item.totalAmount.toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3.5 px-3">
-                    <span
-                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
-                        item.status === 'Paid'
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-amber-950 text-amber-400 border border-amber-500/30'
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-3 text-right">
-                    <button
-                      onClick={() => alert(`Downloading PDF invoice ${item.invoiceNo}...`)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] transition-colors"
-                    >
-                      <Download className="w-3 h-3 text-cyan-400" />
-                      <span>PDF</span>
-                    </button>
+              {payouts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Wallet className="w-6 h-6 text-gray-600" />
+                      <span className="text-sm font-semibold text-gray-400">No payout records assigned by the core team yet.</span>
+                      <span className="text-xs text-gray-500">Payout records will appear here once generated in Django Admin.</span>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                payouts.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-950/40 transition-colors">
+                    <td className="py-3.5 px-3 font-mono text-cyan-400 font-bold">
+                      {item.invoiceNo}
+                    </td>
+                    <td className="py-3.5 px-3 text-white font-medium">{item.month}</td>
+                    <td className="py-3.5 px-3 text-gray-300 max-w-xs truncate">
+                      {item.projectTitle}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-gray-300">
+                      ₹{item.baseAmount ? item.baseAmount.toLocaleString('en-IN') : 0}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono text-emerald-400">
+                      +₹{item.bonusAmount ? item.bonusAmount.toLocaleString('en-IN') : 0}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono font-bold text-white text-sm">
+                      ₹{item.totalAmount ? item.totalAmount.toLocaleString('en-IN') : 0}
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
+                          item.status === 'Paid'
+                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-amber-950 text-amber-400 border border-amber-500/30'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-3 text-right">
+                      <button
+                        onClick={() => alert(`Downloading PDF invoice ${item.invoiceNo}...`)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] transition-colors"
+                      >
+                        <Download className="w-3 h-3 text-cyan-400" />
+                        <span>PDF</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

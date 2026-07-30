@@ -40,8 +40,8 @@ urlpatterns = [
     # REST API routes
     path('api/', include('api.urls')),
     path('api/', include('portfolio.urls')),
-    path('api/', include('leads.urls')),
 ]
+
 
 # Always serve media files from MEDIA_ROOT during development & single-server setups
 if settings.DEBUG or settings.MEDIA_ROOT:

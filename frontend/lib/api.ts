@@ -470,3 +470,85 @@ export async function submitFeedback(payload: ApiFeedbackPayload): Promise<{ suc
     return { success: false, error: error.message || 'Failed to submit feedback.' };
   }
 }
+
+
+/**
+ * Submit Call Partner Application to POST /api/call-partner/apply/
+ */
+export async function submitCallPartnerApplication(payload: {
+  full_name: string;
+  email: string;
+  whatsapp_number: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  const base = getApiBase();
+  try {
+    const res = await fetch(`${base}/call-partner/apply/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const errorMsg =
+        data?.error ||
+        data?.detail ||
+        data?.email?.[0] ||
+        data?.whatsapp_number?.[0] ||
+        data?.full_name?.[0] ||
+        `Server returned ${res.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('[API Submit Call Partner Error]:', error);
+    return { success: false, error: error.message || 'Failed to submit Call Partner application.' };
+  }
+}
+
+/**
+ * Submit a referred Client Lead to POST /api/leads/ (Requires Token Auth)
+ */
+export async function submitClientLead(
+  payload: {
+    client_name: string;
+    client_phone: string;
+    project_type: string;
+    discussed_price?: string;
+  },
+  tokenOverride?: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const base = getApiBase();
+  const token = tokenOverride || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '') || '';
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Token ${token}`;
+    }
+
+    const res = await fetch(`${base}/leads/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const errorMsg =
+        data?.detail ||
+        data?.client_name?.[0] ||
+        data?.client_phone?.[0] ||
+        `Server returned ${res.status}`;
+      return { success: false, error: errorMsg };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('[API Submit Client Lead Error]:', error);
+    return { success: false, error: error.message || 'Failed to submit lead.' };
+  }
+}
+

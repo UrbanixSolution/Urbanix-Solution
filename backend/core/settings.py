@@ -53,11 +53,13 @@ DEBUG = os.getenv('DEBUG') == 'True'
 #   ALLOWED_HOSTS=urbanixsolution.online,www.urbanixsolution.online,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net
 ALLOWED_HOSTS = [h.strip() for h in os.getenv(
     'ALLOWED_HOSTS',
-    'localhost,127.0.0.1,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net'
+    'localhost,127.0.0.1,testserver,urbanix-brdpdta5acenanh5.centralindia-01.azurewebsites.net'
 ).split(',') if h.strip()] + [
     'urbanixsolution.online',
     'www.urbanixsolution.online',
+    'testserver',
 ]
+
 
 # Ensure Django redirects /path to /path/ where needed (safe default).
 APPEND_SLASH = True
@@ -314,41 +316,85 @@ JAZZMIN_SETTINGS = {
     # ── Left sidebar ────────────────────────────────────────────────────────
     'show_sidebar':            True,
     'navigation_expanded':     True,
-    'hide_apps':               ['portfolio', 'leads'],  # crm is intentionally visible
+    'hide_apps':               ['portfolio', 'leads'],  # legacy apps hidden
     'hide_models':             [],
 
-    # Custom sidebar ordering: our apps first, then auth
+    # Custom sidebar ordering: Organized into 4 logical groups
     'order_with_respect_to': [
-        'api', 'crm', 'auth',
+        # Section 1: 🌐 Website Management
+        'api.portfolioproject',
+        'api.service',
+        'api.pricingtier',
+        'api.category',
+
+        # Section 2: 🤝 Leads & Applications
+        'api.agencypartnerlead',
+        'api.careerapplication',
+        'api.callbackrequest',
+        'api.contactlead',
+        'api.websitefeedback',
+        'api.callpartnerapplication',
+
+        # Section 3: 💼 Agency CRM & ERP
+        'crm.client',
+        'crm.teammember',
+        'crm.projecttask',
+        'api.coreteam',
+        'api.assignedproject',
+        'api.assignedtask',
+        'api.assignedpayout',
+        'api.clientlead',
+
+        # Section 4: ⚙️ Access & Security
+        'api.userprofile',
+        'api.dashboardpermission',
+        'auth.group',
+        'auth.user',
+        'authtoken.token',
     ],
 
-    # Custom icons for sidebar items (Font Awesome 5 free)
+    # Custom FontAwesome icons for each model
     'icons': {
-        # Auth
-        'auth':                         'fas fa-users-cog',
-        'auth.user':                    'fas fa-user',
-        'auth.Group':                   'fas fa-users',
-        # API Models
-        'api':                          'fas fa-layer-group',
-        'api.service':                  'fas fa-cogs',
-        'api.category':                 'fas fa-tags',
+        # App Icons
+        'auth':                         'fas fa-shield-alt',
+        'api':                          'fas fa-cubes',
+        'crm':                          'fas fa-briefcase',
+        'authtoken':                    'fas fa-key',
+
+        # Section 1: 🌐 Website Management
         'api.portfolioproject':         'fas fa-laptop-code',
+        'api.service':                  'fas fa-concierge-bell',
+        'api.pricingtier':              'fas fa-tags',
+        'api.category':                 'fas fa-layer-group',
+
+        # Section 2: 🤝 Leads & Applications
+        'api.agencypartnerlead':        'fas fa-handshake',
+        'api.careerapplication':        'fas fa-user-graduate',
+        'api.callbackrequest':          'fas fa-phone-volume',
         'api.contactlead':              'fas fa-address-card',
-        'portfolio.category':           'fas fa-tags',
-        'portfolio.project':            'fas fa-laptop-code',
-        # Leads
-        'leads':                        'fas fa-envelope-open-text',
-        'leads.lead':                   'fas fa-paper-plane',
-        # CRM & ERP
-        'crm':                          'fas fa-chart-line',
-        'crm.teammember':               'fas fa-user-tie',
+        'api.websitefeedback':          'fas fa-comments',
+        'api.callpartnerapplication':   'fas fa-headset',
+
+        # Section 3: 💼 Agency CRM & ERP
         'crm.client':                   'fas fa-building',
+        'crm.teammember':               'fas fa-user-tie',
         'crm.projecttask':              'fas fa-tasks',
-        'crm.contactlead':              'fas fa-funnel-dollar',
-        'crm.careerapplication':        'fas fa-file-alt',
+        'api.coreteam':                 'fas fa-user-shield',
+        'api.assignedproject':          'fas fa-project-diagram',
+        'api.assignedtask':             'fas fa-list-check',
+        'api.assignedpayout':           'fas fa-file-invoice-dollar',
+        'api.clientlead':               'fas fa-funnel-dollar',
+
+        # Section 4: ⚙️ Access & Security
+        'api.userprofile':              'fas fa-id-badge',
+        'api.dashboardpermission':      'fas fa-user-lock',
+        'auth.group':                   'fas fa-users-cog',
+        'auth.user':                    'fas fa-user',
+        'authtoken.token':              'fas fa-key',
     },
     'default_icon_parents':  'fas fa-folder',
     'default_icon_children': 'fas fa-circle',
+
 
     # ── UI behaviour ────────────────────────────────────────────────────────
     'related_modal_active':     True,   # open FK selects in a modal, not a new tab

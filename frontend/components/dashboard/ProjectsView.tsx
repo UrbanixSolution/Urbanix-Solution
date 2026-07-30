@@ -88,76 +88,89 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenSubm
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filteredProjects.map((project) => (
-          <div
-            key={project.id}
-            className="rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/40 p-6 shadow-xl transition-all duration-200 flex flex-col justify-between space-y-4"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div>
-                  <span className="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
-                    {project.category}
-                  </span>
-                  <h3 className="text-base font-bold text-white tracking-wide mt-2">
-                    {project.title}
-                  </h3>
-                </div>
-                <span
-                  className={`text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full border ${
-                    project.status === 'In Progress'
-                      ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40'
-                      : project.status === 'Under Review'
-                      ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                      : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
-                  }`}
-                >
-                  {project.status}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
-                <span>Client: <strong className="text-gray-200">{project.clientName}</strong></span>
-                <span>•</span>
-                <span className="flex items-center gap-1 font-mono text-cyan-400">
-                  <Clock className="w-3 h-3" /> Due {project.deadline}
-                </span>
-              </div>
-
-              <p className="text-xs text-gray-400 mt-3 p-2.5 rounded-xl bg-gray-950/60 border border-gray-800">
-                Deliverable Target: <span className="text-gray-200 font-medium">{project.deliverableType}</span>
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-3 border-t border-gray-800/80">
-              {/* Progress Bar */}
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1">
-                  <span className="text-gray-400">Milestone Progress</span>
-                  <span className="text-cyan-400 font-mono">{project.progressPercent}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-gray-950 overflow-hidden border border-gray-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-500"
-                    style={{ width: `${project.progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <div className="flex items-center gap-1.5 text-gray-400">
-                  <User className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{project.teamMembers.join(', ')}</span>
-                </div>
-                <span className="font-mono text-emerald-400 font-bold">
-                  Est. Payout: ₹{project.payoutEst.toLocaleString('en-IN')}
-                </span>
-              </div>
-            </div>
+      {filteredProjects.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-gray-900/60 backdrop-blur-xl border border-gray-800 flex flex-col items-center justify-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <FolderKanban className="w-6 h-6" />
           </div>
-        ))}
-      </div>
+          <h3 className="text-base font-bold text-white">No active projects assigned by the core team</h3>
+          <p className="text-xs text-gray-400 max-w-sm">
+            Projects assigned to you by the Core Team via the Django Admin Panel will appear here automatically.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filteredProjects.map((project) => (
+            <div
+              key={project.id}
+              className="rounded-2xl bg-gray-900/80 backdrop-blur-xl border border-gray-800/90 hover:border-cyan-500/40 p-6 shadow-xl transition-all duration-200 flex flex-col justify-between space-y-4"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <span className="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
+                      {project.category}
+                    </span>
+                    <h3 className="text-base font-bold text-white tracking-wide mt-2">
+                      {project.title}
+                    </h3>
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full border ${
+                      project.status === 'In Progress'
+                        ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/40'
+                        : project.status === 'Under Review'
+                        ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                        : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                    }`}
+                  >
+                    {project.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
+                  <span>Client: <strong className="text-gray-200">{project.clientName}</strong></span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 font-mono text-cyan-400">
+                    <Clock className="w-3 h-3" /> Due {project.deadline}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-400 mt-3 p-2.5 rounded-xl bg-gray-950/60 border border-gray-800">
+                  Deliverable Target: <span className="text-gray-200 font-medium">{project.deliverableType}</span>
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-3 border-t border-gray-800/80">
+                {/* Progress Bar */}
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1">
+                    <span className="text-gray-400">Milestone Progress</span>
+                    <span className="text-cyan-400 font-mono">{project.progressPercent}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-gray-950 overflow-hidden border border-gray-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-500"
+                      style={{ width: `${project.progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{project.teamMembers.join(', ')}</span>
+                  </div>
+                  <span className="font-mono text-emerald-400 font-bold">
+                    Est. Payout: ₹{project.payoutEst ? project.payoutEst.toLocaleString('en-IN') : 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
     </div>
   );
 };

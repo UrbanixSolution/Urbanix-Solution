@@ -73,17 +73,28 @@ export default function AgencyPortalPage() {
   }, []);
 
   // Fetch Dashboard Data from Django Backend REST API
-  const fetchDashboardData = async (employeeId: string) => {
+  const fetchDashboardData = async (tokenOverride?: string) => {
     setIsLoadingData(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/dashboard-data/?employee_id=${encodeURIComponent(employeeId)}`);
+      const token = tokenOverride || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '') || '';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Token ${token}`;
+      }
+
+      const response = await fetch(`http://127.0.0.1:8000/api/dashboard-data/`, {
+        headers,
+      });
+
       if (response.ok) {
         const data = await response.json();
         
         if (data.user) {
           setUser({
             id: data.user.id || 'usr_api',
-            employeeId: data.user.employee_id || employeeId,
+            employeeId: data.user.employee_id || 'URB-DEV',
             name: data.user.name || 'Agency Team Member',
             role: data.user.role || 'Senior Developer',
             department: data.user.department || 'Production',
@@ -93,11 +104,11 @@ export default function AgencyPortalPage() {
           });
         }
 
-        if (data.projects) setProjects(data.projects);
-        if (data.tasks) setTasks(data.tasks);
-        if (data.deliverables) setDeliverables(data.deliverables);
-        if (data.payouts) setPayouts(data.payouts);
-        if (data.notifications) setNotifications(data.notifications);
+        setProjects(data.projects || []);
+        setTasks(data.tasks || []);
+        setDeliverables(data.deliverables || []);
+        setPayouts(data.payouts || []);
+        setNotifications(data.notifications || []);
       }
     } catch (err) {
       console.warn("Django REST API offline error.", err);
@@ -109,6 +120,10 @@ export default function AgencyPortalPage() {
   const handleLoginSuccess = (employeeId: string, loginData?: any) => {
     setIsAuthenticated(true);
     
+    if (loginData && loginData.token) {
+      localStorage.setItem('auth_token', loginData.token);
+    }
+
     if (loginData && loginData.user) {
       setUser({
         id: loginData.user.id,
@@ -122,9 +137,10 @@ export default function AgencyPortalPage() {
       });
     }
 
-    // Fetch real dashboard state & card permissions
-    fetchDashboardData(employeeId);
+    // Fetch real dashboard state & card permissions using token
+    fetchDashboardData(loginData?.token);
   };
+
 
   const handleLogout = () => {
     setIsAuthenticated(false);

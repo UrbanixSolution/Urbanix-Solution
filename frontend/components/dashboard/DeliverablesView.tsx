@@ -199,43 +199,55 @@ export const DeliverablesView: React.FC<DeliverablesViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60 font-medium">
-              {deliverables.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-950/40 transition-colors">
-                  <td className="py-3 px-3 text-white font-bold max-w-xs truncate">
-                    {item.title}
-                  </td>
-                  <td className="py-3 px-3 text-gray-300 font-mono text-[11px]">
-                    {item.projectName}
-                  </td>
-                  <td className="py-3 px-3 text-gray-400 font-mono text-[11px]">
-                    {item.submittedAt}
-                  </td>
-                  <td className="py-3 px-3">
-                    <span
-                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
-                        item.status === 'Approved'
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-                          : item.status === 'Pending Review'
-                          ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/30'
-                          : 'bg-amber-950 text-amber-400 border border-amber-500/30'
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <a
-                      href={item.linkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-400 text-[11px] transition-colors"
-                    >
-                      <span>Open</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+              {deliverables.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <UploadCloud className="w-6 h-6 text-gray-600" />
+                      <span className="text-sm font-semibold text-gray-400">No deliverables submitted yet.</span>
+                      <span className="text-xs text-gray-500">Use the form above to upload your project deliverable link.</span>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                deliverables.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-950/40 transition-colors">
+                    <td className="py-3 px-3 text-white font-bold max-w-xs truncate">
+                      {item.title}
+                    </td>
+                    <td className="py-3 px-3 text-gray-300 font-mono text-[11px]">
+                      {item.projectName}
+                    </td>
+                    <td className="py-3 px-3 text-gray-400 font-mono text-[11px]">
+                      {item.submittedAt}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
+                          item.status === 'Approved'
+                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+                            : item.status === 'Pending Review'
+                            ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/30'
+                            : 'bg-amber-950 text-amber-400 border border-amber-500/30'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <a
+                        href={item.linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-400 text-[11px] transition-colors"
+                      >
+                        <span>Open</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

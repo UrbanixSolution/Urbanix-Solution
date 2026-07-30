@@ -230,71 +230,78 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
               {/* Timeline Item List */}
               <div className="space-y-4">
-                {projects.map((project) => {
-                  const getStatusBadge = (status: Project['status']) => {
-                    switch (status) {
-                      case 'In Progress':
-                        return 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40';
-                      case 'Under Review':
-                        return 'bg-amber-950/70 text-amber-300 border-amber-500/40';
-                      case 'Completed':
-                        return 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40';
-                      default:
-                        return 'bg-gray-800 text-gray-400 border-gray-700';
-                    }
-                  };
+                {projects.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl bg-gray-950/40 border border-dashed border-gray-800 text-gray-500 text-xs flex flex-col items-center gap-2">
+                    <Layers className="w-6 h-6 text-gray-600" />
+                    <span>No active projects assigned by the core team.</span>
+                  </div>
+                ) : (
+                  projects.map((project) => {
+                    const getStatusBadge = (status: Project['status']) => {
+                      switch (status) {
+                        case 'In Progress':
+                          return 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40';
+                        case 'Under Review':
+                          return 'bg-amber-950/70 text-amber-300 border-amber-500/40';
+                        case 'Completed':
+                          return 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40';
+                        default:
+                          return 'bg-gray-800 text-gray-400 border-gray-700';
+                      }
+                    };
 
-                  return (
-                    <div
-                      key={project.id}
-                      className="p-4 rounded-xl bg-gray-950/60 border border-gray-800/80 hover:border-gray-700 transition-all space-y-3"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 rounded-full bg-cyan-400 mt-2 shrink-0 animate-pulse" />
-                          <div>
-                            <h4 className="text-sm font-bold text-white tracking-wide">
-                              {project.title}
-                            </h4>
-                            <span className="text-xs text-gray-400">
-                              Client: <strong className="text-gray-300">{project.clientName}</strong>
+                    return (
+                      <div
+                        key={project.id}
+                        className="p-4 rounded-xl bg-gray-950/60 border border-gray-800/80 hover:border-gray-700 transition-all space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-start gap-3">
+                            <div className="w-2 h-2 rounded-full bg-cyan-400 mt-2 shrink-0 animate-pulse" />
+                            <div>
+                              <h4 className="text-sm font-bold text-white tracking-wide">
+                                {project.title}
+                              </h4>
+                              <span className="text-xs text-gray-400">
+                                Client: <strong className="text-gray-300">{project.clientName}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <span
+                              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${getStatusBadge(
+                                project.status
+                              )}`}
+                            >
+                              {project.status}
+                            </span>
+                            <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-cyan-400" />
+                              {project.deadline}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <span
-                            className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${getStatusBadge(
-                              project.status
-                            )}`}
-                          >
-                            {project.status}
-                          </span>
-                          <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-cyan-400" />
-                            {project.deadline}
-                          </span>
+                        {/* Visual Progress Bar (Neon Teal & Cyan) */}
+                        <div>
+                          <div className="flex justify-between text-xs mb-1.5 font-medium">
+                            <span className="text-gray-400">{project.deliverableType}</span>
+                            <span className="text-cyan-400 font-mono font-bold">
+                              {project.progressPercent}% Completed
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-gray-900 overflow-hidden p-0.5 border border-gray-800">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+                              style={{ width: `${project.progressPercent}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-
-                      {/* Visual Progress Bar (Neon Teal & Cyan) */}
-                      <div>
-                        <div className="flex justify-between text-xs mb-1.5 font-medium">
-                          <span className="text-gray-400">{project.deliverableType}</span>
-                          <span className="text-cyan-400 font-mono font-bold">
-                            {project.progressPercent}% Completed
-                          </span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-gray-900 overflow-hidden p-0.5 border border-gray-800">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
-                            style={{ width: `${project.progressPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -365,32 +372,39 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </div>
 
               <div className="space-y-2.5">
-                {tasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    className="p-3 rounded-xl bg-gray-950/60 border border-gray-800/80 flex items-center justify-between text-xs"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <h4 className="text-xs font-semibold text-gray-200 truncate">
-                        {task.title}
-                      </h4>
-                      <p className="text-[10px] text-gray-500 truncate">{task.projectName}</p>
-                    </div>
-                    <span
-                      className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
-                        task.priority === 'Urgent'
-                          ? 'bg-red-950 text-red-400 border border-red-800/60'
-                          : 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
-                      }`}
-                    >
-                      {task.priority}
-                    </span>
+                {tasks.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-500 border border-dashed border-gray-800 rounded-xl">
+                    No pending tasks in queue.
                   </div>
-                ))}
+                ) : (
+                  tasks.slice(0, 3).map((task) => (
+                    <div
+                      key={task.id}
+                      className="p-3 rounded-xl bg-gray-950/60 border border-gray-800/80 flex items-center justify-between text-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <h4 className="text-xs font-semibold text-gray-200 truncate">
+                          {task.title}
+                        </h4>
+                        <p className="text-[10px] text-gray-500 truncate">{task.projectName}</p>
+                      </div>
+                      <span
+                        className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${
+                          task.priority === 'Urgent'
+                            ? 'bg-red-950 text-red-400 border border-red-800/60'
+                            : 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
+                        }`}
+                      >
+                        {task.priority}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

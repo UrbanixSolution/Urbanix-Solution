@@ -9,12 +9,18 @@ from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.authentication import TokenAuthentication
 
 logger = logging.getLogger(__name__)
 from django.contrib.auth.models import User
 from rest_framework.throttling import AnonRateThrottle
 from django.db.models import Q
-from .models import Service, Category, PortfolioProject, ContactLead, CareerApplication, WebsiteFeedback, AgencyPartnerLead, CallbackRequest
+from .models import (
+    Service, Category, PortfolioProject, ContactLead, CareerApplication,
+    WebsiteFeedback, AgencyPartnerLead, CallbackRequest,
+    AssignedProject, AssignedTask, AssignedPayout,
+    CallPartnerApplication, ClientLead,
+)
 from .serializers import (
     ServiceSerializer,
     CategorySerializer,
@@ -24,7 +30,13 @@ from .serializers import (
     WebsiteFeedbackSerializer,
     AgencyPartnerLeadSerializer,
     CallbackRequestSerializer,
+    AssignedProjectSerializer,
+    AssignedTaskSerializer,
+    AssignedPayoutSerializer,
+    CallPartnerApplicationSerializer,
+    ClientLeadSerializer,
 )
+
 
 
 def get_captcha_font():
@@ -205,7 +217,24 @@ class CareerApplicationCreateView(generics.CreateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        # Check for duplicate email or phone number in database
+        email = str(request.data.get('email', '')).strip()
+        phone = str(request.data.get('phone', '')).strip()
+
+        query = Q()
+        if email:
+            query |= Q(email__iexact=email)
+        if phone:
+            query |= Q(phone__iexact=phone)
+
+        if query and CareerApplication.objects.filter(query).exists():
+            return Response(
+                {"error": "An application with this email or phone number is already registered."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         return super().create(request, *args, **kwargs)
+
 
 
 class WebsiteFeedbackCreateView(generics.CreateAPIView):
@@ -357,10 +386,16 @@ class AgencyLoginView(APIView):
         logger.info(f"[LOGIN SUCCESS] User '{user.username}' ({user.email}) logged in successfully.")
         print(f"[LOGIN SUCCESS] User '{user.username}' logged in successfully.")
 
+        # Issue (or retrieve) a persistent DRF Token for this user.
+        # This token is sent as  Authorization: Token <key>  on all subsequent
+        # dashboard API calls so the backend can identify request.user.
+        from rest_framework.authtoken.models import Token
+        token_obj, _ = Token.objects.get_or_create(user=user)
+
         serializer = UserProfileSerializer(profile)
         return Response({
             "message": "Authentication successful",
-            "token": f"session_{user.id}_{uuid.uuid4().hex[:12]}",
+            "token": token_obj.key,          # Real DRF token key
             "user": serializer.data,
             "permissions": serializer.data.get('permissions', {})
         })
@@ -413,241 +448,155 @@ class MagicLoginView(APIView):
 class DashboardDataView(APIView):
     """
     GET /api/dashboard-data/
-    GET /api/dashboard-data/?employee_id=URB-DEV-001
-    Returns full CRM portal state (metrics, assigned projects, tasks, payouts, permissions).
+
+    Returns the CRM portal state (metrics, assigned projects, tasks, payouts,
+    permissions) for the currently authenticated user.
+
+    Authentication: Bearer token sent as  Authorization: Token <key>
+    The token is obtained from /api/auth/login/ or /api/auth/magic-login/.
+
+    RBAC rules applied:
+    - Projects/Tasks: filtered to assigned_to=request.user unless the user
+      has can_view_all_projects=True (admins see all).
+    - Payouts: only returned if can_view_finance or can_view_financials_and_payouts
+      permission is True — otherwise an empty list is sent.
     """
-    permission_classes = [permissions.AllowAny]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        employee_id = request.query_params.get('employee_id') or request.query_params.get('employeeId')
-        
-        profile = None
-        if employee_id:
-            profile = UserProfile.objects.filter(Q(employee_id__iexact=employee_id) | Q(user__username__iexact=employee_id)).first()
+        user = request.user
 
-        if not profile:
-            # Default to first user profile or admin profile
-            profile = UserProfile.objects.first()
-
-        if not profile:
-            # Fallback dummy profile response if database is empty
-            profile_data = {
-                "id": "usr_001",
-                "employee_id": "URB-DEV-01",
-                "username": "URB-DEV-01",
-                "name": "Gaurav Sharma",
-                "email": "gaurav.s@urbanixsolution.internal",
-                "role": "Senior Video Editor & Motion Architect",
-                "department": "Creative & Media Production",
-                "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
-                "permissions": {
-                    "is_admin": False,
-                    "can_view_finance": False,
-                    "can_view_all_projects": False
-                }
+        # ── Load user profile & permissions ───────────────────────────────
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'employee_id': user.username,
+                'role': 'Agency Director & Admin' if user.is_superuser else 'Team Member',
+                'department': 'Core Operations' if user.is_superuser else 'Engineering',
+                'can_view_finance': user.is_superuser,
+                'can_view_all_projects': user.is_superuser,
+                'is_agency_admin': user.is_superuser,
             }
-        else:
-            profile_data = UserProfileSerializer(profile).data
+        )
 
-        permissions = profile_data.get('permissions', {
+        profile_data = UserProfileSerializer(profile).data
+        perms = profile_data.get('permissions', {
             'is_admin': False,
             'can_view_finance': False,
-            'can_view_all_projects': False
+            'can_view_all_projects': False,
         })
 
-        # Sample Dynamic Projects
-        projects = [
-            {
-                "id": "prj-101",
-                "title": "Apex Financial Platform - Brand Motion & UI Video",
-                "clientName": "Apex Capital Holdings LLC",
-                "category": "VFX & Motion Graphics",
-                "status": "In Progress",
-                "progressPercent": 78,
-                "deadline": "04 Aug 2026",
-                "teamMembers": ["Gaurav S.", "Rohan K.", "Ananya P."],
-                "deliverableType": "4K Cinematic Reel & Interactive UI Animations",
-                "priority": "High",
-                "payoutEst": 65000
-            },
-            {
-                "id": "prj-102",
-                "title": "Nexus AI SaaS Portal - Dashboard UI & Micro-interactions",
-                "clientName": "Nexus Labs Inc.",
-                "category": "Web App & Frontend Development",
-                "status": "In Progress",
-                "progressPercent": 62,
-                "deadline": "12 Aug 2026",
-                "teamMembers": ["Gaurav S.", "Vikram R."],
-                "deliverableType": "React Components & Framer Animations",
-                "priority": "High",
-                "payoutEst": 50000
-            },
-            {
-                "id": "prj-103",
-                "title": "Veloce Motors - EV Promo Campaign Launch",
-                "clientName": "Veloce Automotives Global",
-                "category": "Commercial Video & 3D Render",
-                "status": "Under Review",
-                "progressPercent": 90,
-                "deadline": "31 Jul 2026",
-                "teamMembers": ["Gaurav S.", "Priya N."],
-                "deliverableType": "30s TV Commercial + Social Cutdowns",
-                "priority": "Medium",
-                "payoutEst": 30000
-            },
-            {
-                "id": "prj-104",
-                "title": "Urbanix Design System v3.0 - Internal Motion Assets",
-                "clientName": "Urbanix Core Architecture",
-                "category": "Internal R&D",
-                "status": "In Progress",
-                "progressPercent": 40,
-                "deadline": "20 Aug 2026",
-                "teamMembers": ["Gaurav S."],
-                "deliverableType": "Lottie Animations & CSS Tokens",
-                "priority": "Low",
-                "payoutEst": 20000
-            }
-        ]
+        # ── Projects ─────────────────────────────────────────────────────
+        # Admins with can_view_all_projects see every project in the database.
+        # All other users see only projects explicitly assigned to them.
+        if perms.get('can_view_all_projects', False):
+            project_qs = AssignedProject.objects.all()
+        else:
+            project_qs = AssignedProject.objects.filter(assigned_to=user)
 
-        # Sample Dynamic Tasks
-        tasks = [
-            {
-                "id": "tsk-01",
-                "title": "Finalize 3D camera trajectory for Apex 4K Hero Sequence",
-                "projectId": "prj-101",
-                "projectName": "Apex Financial Platform",
-                "priority": "Urgent",
-                "status": "in_progress",
-                "dueDate": "29 Jul 2026",
-                "estimatedHours": 6
-            },
-            {
-                "id": "tsk-02",
-                "title": "Export color-graded ProRes 4444 master files for Veloce review",
-                "projectId": "prj-103",
-                "projectName": "Veloce Motors Campaign",
-                "priority": "High",
-                "status": "in_review",
-                "dueDate": "30 Jul 2026",
-                "estimatedHours": 3
-            },
-            {
-                "id": "tsk-03",
-                "title": "Build Framer Motion physics spring configs for Nexus UI",
-                "projectId": "prj-102",
-                "projectName": "Nexus AI SaaS Portal",
-                "priority": "High",
-                "status": "todo",
-                "dueDate": "02 Aug 2026",
-                "estimatedHours": 8
-            },
-            {
-                "id": "tsk-04",
-                "title": "Upload raw render passes to AWS S3 bucket for client backup",
-                "projectId": "prj-101",
-                "projectName": "Apex Financial Platform",
-                "priority": "Normal",
-                "status": "todo",
-                "dueDate": "03 Aug 2026",
-                "estimatedHours": 2
-            }
-        ]
+        projects_data = AssignedProjectSerializer(project_qs, many=True).data
 
-        # Deliverables
-        deliverables = [
-            {
-                "id": "del-901",
-                "projectId": "prj-103",
-                "projectName": "Veloce Motors Campaign",
-                "title": "Veloce EV 30s Cut-v3_ColorGraded_Master.mp4",
-                "linkUrl": "https://drive.google.com/file/d/urbanix-veloce-v3-master/view",
-                "submittedAt": "28 Jul 2026, 14:30",
-                "fileSize": "1.84 GB",
-                "status": "Pending Review",
-                "notes": "Incorporated client feedback on bass boost and end logo glow."
-            },
-            {
-                "id": "del-900",
-                "projectId": "prj-101",
-                "projectName": "Apex Financial Platform",
-                "title": "Apex_Hero_Motion_Teaser_Draft2.mov",
-                "linkUrl": "https://frame.io/player/apex-motion-teaser-v2",
-                "submittedAt": "25 Jul 2026, 11:15",
-                "fileSize": "940 MB",
-                "status": "Approved",
-                "notes": "Approved by Creative Director for client presentation."
-            }
-        ]
+        # ── Tasks ────────────────────────────────────────────────────────
+        task_qs = AssignedTask.objects.filter(assigned_to=user).select_related('project')
+        tasks_data = AssignedTaskSerializer(task_qs, many=True).data
 
-        # Payouts - CONDITIONAL BASED ON PERMISSIONS
-        payouts = []
-        if permissions.get('can_view_finance', False):
-            payouts = [
-                {
-                    "id": "pay-2026-07",
-                    "invoiceNo": "URB-INV-2026-088",
-                    "month": "July 2026 (Unbilled Current)",
-                    "projectTitle": "Apex Financial & Nexus AI Milestone 1",
-                    "baseAmount": 125000,
-                    "bonusAmount": 20000,
-                    "totalAmount": 145000,
-                    "status": "Pending Approval",
-                    "dueDate": "05 Aug 2026"
-                },
-                {
-                    "id": "pay-2026-06",
-                    "invoiceNo": "URB-INV-2026-071",
-                    "month": "June 2026",
-                    "projectTitle": "Krypton Cyber Platform & Veloce Teaser",
-                    "baseAmount": 110000,
-                    "bonusAmount": 15000,
-                    "totalAmount": 125000,
-                    "status": "Paid",
-                    "dueDate": "05 Jul 2026",
-                    "paidDate": "04 Jul 2026"
-                }
-            ]
+        # ── Payouts ──────────────────────────────────────────────────────
+        # Only returned when the user has financial visibility.
+        can_see_finance = perms.get('can_view_finance', False) or perms.get('can_view_financials_and_payouts', False)
+        if can_see_finance:
+            payout_qs = AssignedPayout.objects.filter(assigned_to=user)
+            payouts_data = AssignedPayoutSerializer(payout_qs, many=True).data
+        else:
+            payouts_data = []
 
-        # Notifications
+        # ── Deliverables (frontend-managed — pass empty list for now) ──────
+        # Deliverables are submitted by the user via the frontend modal and
+        # managed in React state. The backend does not yet persist them.
+        deliverables_data = []
+
+        # ── Notifications (static for now) ────────────────────────────────
         notifications = [
             {
-                "id": "notif-1",
-                "title": "Deliverable Approved",
-                "message": "Apex Hero Motion Teaser was approved by Creative Lead.",
-                "timeAgo": "2 hours ago",
+                "id": "notif-system-1",
+                "title": "Welcome to Urbanix CRM",
+                "message": f"Hello {profile_data.get('name', user.username)}! Your dashboard is live.",
+                "timeAgo": "Just now",
                 "isRead": False,
-                "type": "project"
-            },
-            {
-                "id": "notif-2",
-                "title": "Payout Disbursement Scheduled",
-                "message": "July unbilled payout of ₹1,45,000 scheduled for Aug 5th.",
-                "timeAgo": "5 hours ago",
-                "isRead": False,
-                "type": "payout"
+                "type": "system"
             }
         ]
 
-        # Calculate metrics
-        unbilled_total = sum(p['totalAmount'] for p in payouts if p['status'] in ['Pending Approval', 'Processing']) if permissions.get('can_view_finance', False) else 0
+        # ── Metrics ───────────────────────────────────────────────────────
+        active_projects = [p for p in projects_data if p.get('status') in ('In Progress', 'Under Review', 'Upcoming')]
+        pending_tasks   = [t for t in tasks_data if t.get('status') != 'done']
+        unbilled_total  = sum(
+            p['totalAmount'] for p in payouts_data
+            if p.get('status') in ('Pending Approval', 'Processing')
+        ) if can_see_finance else 0
 
         return Response({
             "user": profile_data,
-            "permissions": permissions,
+            "permissions": perms,
             "metrics": {
-                "activeProjectsCount": len(projects),
-                "activeProjectsGrowth": "+2 this month",
-                "pendingTasksCount": len([t for t in tasks if t['status'] != 'done']),
+                "activeProjectsCount":   len(active_projects),
+                "activeProjectsGrowth":  "+0 this month",
+                "pendingTasksCount":     len(pending_tasks),
                 "unbilledPayoutsAmount": unbilled_total,
             },
-            "projects": projects,
-            "tasks": tasks,
-            "deliverables": deliverables,
-            "payouts": payouts,
-            "notifications": notifications
+            "projects":      projects_data,
+            "tasks":         tasks_data,
+            "deliverables":  deliverables_data,
+            "payouts":       payouts_data,
+            "notifications": notifications,
         })
+
+
+# ===========================================================================
+# Call Partner Program Views & Endpoints
+# ===========================================================================
+
+class CallPartnerApplicationApplyView(generics.CreateAPIView):
+    """
+    POST /api/call-partner/apply/
+    Public endpoint accepting simple Call Partner applications (full_name, email, whatsapp_number)
+    from the Career page modal without authentication.
+    """
+    queryset = CallPartnerApplication.objects.all()
+    serializer_class = CallPartnerApplicationSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = []
+
+
+class ClientLeadViewSet(viewsets.ModelViewSet):
+    """
+    GET /api/leads/
+    POST /api/leads/
+
+    Private endpoint for managing referred ClientLeads.
+    Role-Based Access Control:
+    - If user is superuser or agency admin: sees ALL submitted client leads across all partners.
+    - Otherwise (Call Partner / Team Member): ONLY sees client leads where partner == request.user.
+    """
+    serializer_class = ClientLeadSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ClientLead.objects.none()
+
+        profile = getattr(user, 'profile', None)
+        is_admin = user.is_superuser or (profile and (profile.is_agency_admin or profile.can_view_all_projects))
+
+        if is_admin:
+            return ClientLead.objects.all()
+        return ClientLead.objects.filter(partner=user)
+
+    def perform_create(self, serializer):
+        serializer.save(partner=self.request.user)
+
 
 
 

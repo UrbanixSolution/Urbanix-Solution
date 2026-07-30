@@ -279,6 +279,11 @@ class UserProfile(models.Model):
         default=False,
         help_text="If True, user has full agency administrative access."
     )
+    is_call_partner = models.BooleanField(
+        default=False,
+        help_text="If True, user is an approved Call Partner who can submit client leads for commission."
+    )
+
 
     send_update_email = models.BooleanField(
         default=False,
@@ -426,8 +431,278 @@ class CallbackRequest(models.Model):
         verbose_name = "Callback Request"
         verbose_name_plural = "Callback Requests"
 
+
+
     def __str__(self):
         return f"Callback Request from {self.full_name} ({self.phone_number}) - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+# ===========================================================================
+# Agency CRM Portal — Assigned Work Models
+# ===========================================================================
+# These models store the real project/task/payout records that the Core Team
+# assigns to specific team members via Django Admin. The DashboardDataView
+# queries these tables filtered by request.user instead of returning
+# hardcoded dummy data.
+# ===========================================================================
+
+class AssignedProject(models.Model):
+    """
+    A client project assigned to a specific team member in the CRM portal.
+    Core Team creates these in Admin and links them to the relevant User.
+    """
+
+    STATUS_CHOICES = [
+        ('In Progress',   'In Progress'),
+        ('Under Review',  'Under Review'),
+        ('Completed',     'Completed'),
+        ('Upcoming',      'Upcoming'),
+        ('On Hold',       'On Hold'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('High',   'High'),
+        ('Medium', 'Medium'),
+        ('Low',    'Low'),
+    ]
+
+    # ── Core assignment ────────────────────────────────────────────────────
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='assigned_projects',
+        help_text='Team member responsible for this project.',
+    )
+
+    # ── Project details (mirror the frontend Project interface) ────────────
+    title = models.CharField(max_length=300, help_text='Project title shown in the portal.')
+    client_name = models.CharField(max_length=200, help_text='Client or company name.')
+    category = models.CharField(max_length=150, blank=True, help_text='Work category e.g. VFX & Motion Graphics.')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='In Progress')
+    progress_percent = models.PositiveSmallIntegerField(
+        default=0,
+        help_text='Completion percentage 0–100.',
+    )
+    deadline = models.CharField(max_length=50, blank=True, help_text='Display deadline e.g. 04 Aug 2026.')
+    deliverable_type = models.CharField(max_length=250, blank=True, help_text='e.g. 4K Cinematic Reel & UI Animations.')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='High')
+    payout_est = models.PositiveIntegerField(
+        default=0,
+        help_text='Estimated payout for this project in INR (shown only if finance permissions are granted).',
+    )
+    # JSON list of team member display names e.g. ["Gaurav S.", "Rohan K."]
+    team_members = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='JSON list of team member display names sharing this project e.g. ["Gaurav S.", "Rohan K."].',
+    )
+
+    # ── Timestamps ────────────────────────────────────────────────────────
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Assigned Project'
+        verbose_name_plural = 'Assigned Projects'
+
+    def __str__(self):
+        return f'{self.title} → {self.assigned_to.username} [{self.status}]'
+
+
+class AssignedTask(models.Model):
+    """
+    A task assigned to a specific team member, optionally linked to an AssignedProject.
+    """
+
+    PRIORITY_CHOICES = [
+        ('Urgent', 'Urgent'),
+        ('High',   'High'),
+        ('Medium', 'Medium'),
+        ('Normal', 'Normal'),
+    ]
+
+    STATUS_CHOICES = [
+        ('todo',        'To Do'),
+        ('in_progress', 'In Progress'),
+        ('in_review',   'In Review'),
+        ('done',        'Done'),
+    ]
+
+    # ── Core assignment ────────────────────────────────────────────────────
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='assigned_tasks',
+        help_text='Team member this task is assigned to.',
+    )
+    project = models.ForeignKey(
+        AssignedProject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tasks',
+        help_text='Parent project this task belongs to (optional).',
+    )
+
+    # ── Task details ───────────────────────────────────────────────────────
+    title = models.CharField(max_length=400, help_text='Task description shown in the task board.')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
+    due_date = models.CharField(max_length=50, blank=True, help_text='Display due date e.g. 02 Aug 2026.')
+    estimated_hours = models.PositiveSmallIntegerField(
+        default=1,
+        help_text='Estimated hours to complete this task.',
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Assigned Task'
+        verbose_name_plural = 'Assigned Tasks'
+
+    def __str__(self):
+        project_name = self.project.title if self.project else 'No Project'
+        return f'[{self.get_priority_display()}] {self.title[:60]} ({project_name})'
+
+
+class AssignedPayout(models.Model):
+    """
+    A payout record for a specific team member.
+    Visible in the portal only if the user has can_view_finance or
+    can_view_financials_and_payouts permission.
+    """
+
+    STATUS_CHOICES = [
+        ('Pending Approval', 'Pending Approval'),
+        ('Processing',       'Processing'),
+        ('Paid',             'Paid'),
+        ('On Hold',          'On Hold'),
+    ]
+
+    # ── Core assignment ────────────────────────────────────────────────────
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='assigned_payouts',
+        help_text='Team member this payout belongs to.',
+    )
+
+    # ── Payout details ─────────────────────────────────────────────────────
+    invoice_no = models.CharField(max_length=100, blank=True, help_text='Invoice number e.g. URB-INV-2026-088.')
+    month = models.CharField(max_length=80, help_text='Display month e.g. July 2026.')
+    project_title = models.CharField(max_length=300, blank=True, help_text='Project(s) this payout covers.')
+    base_amount = models.PositiveIntegerField(default=0, help_text='Base payout amount in INR.')
+    bonus_amount = models.PositiveIntegerField(default=0, help_text='Bonus / performance incentive in INR.')
+    total_amount = models.PositiveIntegerField(
+        default=0,
+        help_text='Total payout in INR. Auto-calculated as base + bonus if left at 0.',
+    )
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending Approval')
+    due_date = models.CharField(max_length=50, blank=True, help_text='Display due date e.g. 05 Aug 2026.')
+    paid_date = models.CharField(max_length=50, blank=True, help_text='Display paid date e.g. 04 Jul 2026 (fill when status=Paid).')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Assigned Payout'
+        verbose_name_plural = 'Assigned Payouts'
+
+    def save(self, *args, **kwargs):
+        # Auto-calculate total_amount if admin left it at 0
+        if self.total_amount == 0:
+            self.total_amount = self.base_amount + self.bonus_amount
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        label = self.invoice_no or self.month
+        return f'{label} → {self.assigned_to.username} — ₹{self.total_amount:,} [{self.status}]'
+
+
+# ===========================================================================
+# Call Partner Program Models
+# ===========================================================================
+
+class CallPartnerApplication(models.Model):
+    """
+    Public application from non-technical referral partners who want to bring client leads for commission.
+    """
+    STATUS_CHOICES = [
+        ('Pending',  'Pending'),
+        ('Accepted', 'Accepted'),
+        ('Rejected', 'Rejected'),
+    ]
+
+    full_name = models.CharField(max_length=200, help_text="Full Name of the Call Partner applicant")
+    email = models.EmailField(help_text="Official / Personal Email Address")
+    whatsapp_number = models.CharField(max_length=30, help_text="WhatsApp Phone Number for communication")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='Pending',
+        help_text="Application approval status. Changing to 'Accepted' automatically creates a User account and dispatches welcome email."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Call Partner Application'
+        verbose_name_plural = 'Call Partner Applications'
+
+    def __str__(self):
+        return f"{self.full_name} ({self.email}) — [{self.status}]"
+
+
+class ClientLead(models.Model):
+    """
+    Client leads submitted by Call Partners for agency projects.
+    """
+    STATUS_CHOICES = [
+        ('Under Review',                 'Under Review'),
+        ('Approved',                     'Approved'),
+        ('Payment Processed - 48 Hours', 'Payment Processed - 48 Hours'),
+        ('Rejected',                     'Rejected'),
+    ]
+
+    partner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='submitted_client_leads',
+        help_text="Call Partner user who referred/submitted this lead."
+    )
+    client_name = models.CharField(max_length=200, help_text="Client Name or Business Name")
+    client_phone = models.CharField(max_length=30, help_text="Client Phone or WhatsApp number")
+    project_type = models.CharField(
+        max_length=150,
+        help_text="Type of project e.g. Business Website, E-Commerce, Video Editing, Ads"
+    )
+    discussed_price = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Deal / Discussed Amount e.g. ₹15,000"
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default='Under Review',
+        help_text="Pipeline status for this referred client lead."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Client Lead'
+        verbose_name_plural = 'Client Leads'
+
+    def __str__(self):
+        return f"{self.client_name} ({self.project_type}) — Referred by {self.partner.username} [{self.status}]"
+
+
 
 
 

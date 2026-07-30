@@ -13,15 +13,17 @@ from .views import (
     AgencyLoginView,
     MagicLoginView,
     DashboardDataView,
+    CallPartnerApplicationApplyView,
+    ClientLeadViewSet,
 )
 
 router = DefaultRouter()
 router.register(r'services', ServiceViewSet, basename='service')
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'projects', PortfolioProjectViewSet, basename='project')
+router.register(r'leads', ClientLeadViewSet, basename='lead')
 
 urlpatterns = [
-    path('', include(router.urls)),
     path('auth/login/', AgencyLoginView.as_view(), name='api-auth-login'),
     path('auth/magic-login/', MagicLoginView.as_view(), name='api-auth-magic-login'),
     path('dashboard-data/', DashboardDataView.as_view(), name='api-dashboard-data'),
@@ -30,7 +32,11 @@ urlpatterns = [
     path('contact/', ContactLeadCreateView.as_view(), name='api-contact'),
     path('callback/', CallbackRequestCreateView.as_view(), name='api-callback'),
     path('career/', CareerApplicationCreateView.as_view(), name='api-career'),
+    path('call-partner/apply/', CallPartnerApplicationApplyView.as_view(), name='api-call-partner-apply'),
     path('agency-partner/', AgencyPartnerLeadCreateView.as_view(), name='api-agency-partner'),
     path('feedback/', WebsiteFeedbackCreateView.as_view(), name='api-feedback'),
+    path('', include(router.urls)),
 ]
+
+
 

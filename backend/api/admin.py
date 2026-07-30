@@ -6,12 +6,14 @@ raw api inbox into the CRM app (crm.Client and crm.TeamMember).
 """
 
 import logging
+from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
 from django.utils.html import format_html
 
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,14 @@ from .models import (
     UserProfile,
     DashboardPermission,
     CoreTeam,
+    AssignedProject,
+    AssignedTask,
+    AssignedPayout,
+    CallPartnerApplication,
+    ClientLead,
 )
+
+
 
 # Unregister default User model from admin
 try:
@@ -37,13 +46,31 @@ except admin.sites.NotRegistered:
     pass
 
 
+class _UserAutocompleteAdmin(UserAdmin):
+    """
+    Minimal User admin registered only to expose search_fields to the Django
+    autocomplete widget used by AssignedProject / AssignedTask / AssignedPayout.
+    We do NOT register this under 'auth.User' in the sidebar — it is hidden
+    behind the CoreTeam proxy model, but the autocomplete machinery still needs
+    a registered admin for the concrete User model.
+    """
+    search_fields = ['username', 'first_name', 'last_name', 'email']
+
+try:
+    admin.site.register(User, _UserAutocompleteAdmin)
+except Exception:
+    pass  # Already registered elsewhere; autocomplete will use whatever admin is present
+
+
 @admin.register(CoreTeam)
 class CoreTeamAdmin(UserAdmin):
     """
     Custom UserAdmin for Core Team members.
     Displays as "Core Team" under Authentication section in Django Admin.
+    search_fields is required to support autocomplete_fields on AssignedProject / AssignedTask / AssignedPayout.
     """
-    pass
+    search_fields = ['username', 'first_name', 'last_name', 'email']
+
 
 
 class DashboardPermissionInline(admin.StackedInline):
@@ -553,6 +580,8 @@ class AgencyPartnerLeadAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
 
+
+
 @admin.register(CallbackRequest)
 class CallbackRequestAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'phone_number', 'state', 'district', 'town', 'is_completed', 'created_at']
@@ -561,5 +590,399 @@ class CallbackRequestAdmin(admin.ModelAdmin):
     search_fields = ['full_name', 'phone_number', 'state', 'district', 'town']
     ordering = ['-created_at']
     readonly_fields = ['created_at']
+
+
+# ===========================================================================
+# Agency CRM Portal — Assigned Work Admin
+# ===========================================================================
+
+class AssignedTaskInline(admin.TabularInline):
+    """
+    Inline editor for tasks — add tasks directly inside an Assigned Project page.
+    """
+    model = AssignedTask
+    extra = 1
+    fields = ['assigned_to', 'title', 'priority', 'status', 'due_date', 'estimated_hours']
+    autocomplete_fields = ['assigned_to']
+    show_change_link = True
+    verbose_name = 'Task'
+    verbose_name_plural = 'Tasks for this Project'
+
+
+@admin.register(AssignedProject)
+class AssignedProjectAdmin(admin.ModelAdmin):
+    """
+    Core Team uses this admin to assign client projects to team members.
+
+    • Use the  assigned_to  field to select any active team member (User).
+    • Add tasks inline at the bottom of the project form.
+    • The team member will see this project (and its tasks) on their portal dashboard.
+    """
+    inlines = [AssignedTaskInline]
+
+    list_display  = ['title', 'assigned_to_display', 'status_badge', 'priority', 'progress_percent', 'deadline', 'client_name', 'payout_est_display', 'created_at']
+    list_filter   = ['status', 'priority', 'assigned_to']
+    search_fields = ['title', 'client_name', 'category', 'assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name', 'assigned_to__email']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    autocomplete_fields = ['assigned_to']
+
+    fieldsets = (
+        ('Assignment', {
+            'description': 'Select which team member this project belongs to.',
+            'fields': ('assigned_to',),
+        }),
+        ('Project Details', {
+            'fields': ('title', 'client_name', 'category', 'deliverable_type', 'team_members'),
+        }),
+        ('Status & Progress', {
+            'fields': ('status', 'priority', 'progress_percent', 'deadline'),
+        }),
+        ('Finance', {
+            'description': 'Payout estimate is only shown to users with financial access.',
+            'fields': ('payout_est',),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description='Assigned To')
+    def assigned_to_display(self, obj):
+        full_name = obj.assigned_to.get_full_name()
+        return full_name or obj.assigned_to.username
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        colors = {
+            'In Progress':  ('#06b6d4', '#ecfeff'),
+            'Under Review': ('#f59e0b', '#fffbeb'),
+            'Completed':    ('#10b981', '#ecfdf5'),
+            'Upcoming':     ('#6366f1', '#eef2ff'),
+            'On Hold':      ('#6b7280', '#f9fafb'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">{}</span>',
+            fg, bg, obj.status
+        )
+
+    @admin.display(description='Est. Payout (₹)')
+    def payout_est_display(self, obj):
+        return f'₹{obj.payout_est:,}' if obj.payout_est else '—'
+
+
+@admin.register(AssignedTask)
+class AssignedTaskAdmin(admin.ModelAdmin):
+    """
+    Manage individual tasks assigned to team members.
+    Tasks can also be created inline inside the Assigned Project admin above.
+    """
+    list_display  = ['title_short', 'assigned_to_display', 'project_link', 'priority_badge', 'status_badge', 'due_date', 'estimated_hours', 'created_at']
+    list_filter   = ['status', 'priority', 'assigned_to']
+    search_fields = ['title', 'assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name', 'project__title']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    autocomplete_fields = ['assigned_to', 'project']
+
+    fieldsets = (
+        ('Assignment', {
+            'description': 'Select which team member owns this task and its parent project.',
+            'fields': ('assigned_to', 'project'),
+        }),
+        ('Task Details', {
+            'fields': ('title', 'priority', 'status', 'due_date', 'estimated_hours'),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description='Task')
+    def title_short(self, obj):
+        return obj.title[:60] + ('…' if len(obj.title) > 60 else '')
+
+    @admin.display(description='Assigned To')
+    def assigned_to_display(self, obj):
+        full_name = obj.assigned_to.get_full_name()
+        return full_name or obj.assigned_to.username
+
+    @admin.display(description='Project')
+    def project_link(self, obj):
+        if obj.project:
+            url = f'/admin/api/assignedproject/{obj.project_id}/change/'
+            return format_html('<a href="{}">{}</a>', url, obj.project.title[:40])
+        return '—'
+
+    @admin.display(description='Priority')
+    def priority_badge(self, obj):
+        colors = {
+            'Urgent': ('#ef4444', '#fef2f2'),
+            'High':   ('#f97316', '#fff7ed'),
+            'Medium': ('#eab308', '#fefce8'),
+            'Normal': ('#6b7280', '#f9fafb'),
+        }
+        fg, bg = colors.get(obj.priority, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px;">{}</span>',
+            fg, bg, obj.priority
+        )
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        labels = {'todo': 'To Do', 'in_progress': 'In Progress', 'in_review': 'In Review', 'done': 'Done'}
+        colors = {
+            'todo':        ('#6b7280', '#f9fafb'),
+            'in_progress': ('#06b6d4', '#ecfeff'),
+            'in_review':   ('#8b5cf6', '#f5f3ff'),
+            'done':        ('#10b981', '#ecfdf5'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px;">{}</span>',
+            fg, bg, labels.get(obj.status, obj.status)
+        )
+
+
+@admin.register(AssignedPayout)
+class AssignedPayoutAdmin(admin.ModelAdmin):
+    """
+    Manage payout records for team members.
+    These are only visible on the portal to users with can_view_finance=True.
+    """
+    list_display  = ['invoice_no', 'assigned_to_display', 'month', 'base_amount_display', 'bonus_amount_display', 'total_amount_display', 'status_badge', 'due_date', 'paid_date']
+    list_filter   = ['status', 'assigned_to']
+    search_fields = ['invoice_no', 'month', 'project_title', 'assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    autocomplete_fields = ['assigned_to']
+
+    fieldsets = (
+        ('Assignment', {
+            'description': 'Select which team member this payout record belongs to.',
+            'fields': ('assigned_to',),
+        }),
+        ('Payout Details', {
+            'fields': ('invoice_no', 'month', 'project_title'),
+        }),
+        ('Amounts (INR)', {
+            'description': 'Total is auto-calculated as base + bonus if left at 0.',
+            'fields': ('base_amount', 'bonus_amount', 'total_amount'),
+        }),
+        ('Status & Dates', {
+            'fields': ('status', 'due_date', 'paid_date'),
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description='Assigned To')
+    def assigned_to_display(self, obj):
+        full_name = obj.assigned_to.get_full_name()
+        return full_name or obj.assigned_to.username
+
+    @admin.display(description='Base (₹)')
+    def base_amount_display(self, obj):
+        return f'₹{obj.base_amount:,}'
+
+    @admin.display(description='Bonus (₹)')
+    def bonus_amount_display(self, obj):
+        return f'₹{obj.bonus_amount:,}'
+
+    @admin.display(description='Total (₹)')
+    def total_amount_display(self, obj):
+        return format_html('<strong>₹{}</strong>', f'{obj.total_amount:,}')
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        colors = {
+            'Pending Approval': ('#f59e0b', '#fffbeb'),
+            'Processing':       ('#06b6d4', '#ecfeff'),
+            'Paid':             ('#10b981', '#ecfdf5'),
+            'On Hold':          ('#6b7280', '#f9fafb'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">{}</span>',
+            fg, bg, obj.status
+        )
+
+
+# ===========================================================================
+# Call Partner Program Admin
+# ===========================================================================
+
+import secrets
+import string
+from django.core.mail import send_mail
+
+
+@admin.register(CallPartnerApplication)
+class CallPartnerApplicationAdmin(admin.ModelAdmin):
+    """
+    Manage applications for the Call Partner Program.
+
+    When an application status is changed to "Accepted":
+    1. Automatically creates a Django User account if none exists.
+    2. Assigns the user a Call Partner profile (is_call_partner=True).
+    3. Sends a Welcome Email with login details and the PARTNER_KIT_URL placeholder.
+    """
+    list_display  = ['full_name', 'email', 'whatsapp_number', 'status_badge', 'created_at']
+    list_filter   = ['status', 'created_at']
+    search_fields = ['full_name', 'email', 'whatsapp_number']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at']
+
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        colors = {
+            'Pending':  ('#f59e0b', '#fffbeb'),
+            'Accepted': ('#10b981', '#ecfdf5'),
+            'Rejected': ('#ef4444', '#fef2f2'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">{}</span>',
+            fg, bg, obj.status
+        )
+
+    def save_model(self, request, obj, form, change):
+        is_new_approval = False
+        if change:
+            old_obj = CallPartnerApplication.objects.filter(pk=obj.pk).first()
+            if old_obj and old_obj.status != 'Accepted' and obj.status == 'Accepted':
+                is_new_approval = True
+        elif obj.status == 'Accepted':
+            is_new_approval = True
+
+        super().save_model(request, obj, form, change)
+
+        if is_new_approval:
+            self._handle_partner_approval(obj)
+
+    def _handle_partner_approval(self, application):
+        email = application.email.strip().lower()
+        full_name = application.full_name.strip()
+        names = full_name.split(' ', 1)
+        first_name = names[0]
+        last_name = names[1] if len(names) > 1 else ''
+
+        user = User.objects.filter(email__iexact=email).first()
+        raw_password = None
+
+        if not user:
+            alphabet = string.ascii_letters + string.digits
+            raw_password = ''.join(secrets.choice(alphabet) for _ in range(10))
+            username = email.split('@')[0][:30]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=raw_password,
+                first_name=first_name,
+                last_name=last_name,
+            )
+        else:
+            raw_password = "[Your existing password]"
+
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'employee_id': f"CP-{user.id:04d}",
+                'role': 'Call Partner',
+                'department': 'Growth & Referrals',
+                'is_call_partner': True,
+                'can_view_finance': False,
+                'can_view_all_projects': False,
+            }
+        )
+        if not profile.is_call_partner:
+            profile.is_call_partner = True
+            profile.role = 'Call Partner'
+            profile.department = 'Growth & Referrals'
+            profile.save()
+
+        # Ensure DRF Token exists
+        from rest_framework.authtoken.models import Token
+        Token.objects.get_or_create(user=user)
+
+        # Dispatch Welcome Email
+        PARTNER_KIT_URL = "TODO: Add PDF link here later"
+        login_url = "https://urbanixsolution.online/agency-portal"
+
+        subject = "Welcome to Urbanix Call Partner Program! 🚀"
+        message = (
+            f"Hello {full_name},\n\n"
+            f"Congratulations! Your application for the Urbanix Call Partner Program has been ACCEPTED.\n\n"
+            f"Here are your login details to access your Call Partner Dashboard:\n"
+            f"--------------------------------------------------\n"
+            f"Portal URL: {login_url}\n"
+            f"Username  : {user.username} (or Email: {email})\n"
+            f"Password  : {raw_password}\n"
+            f"--------------------------------------------------\n\n"
+            f"Partner Kit & Commission Guidelines PDF:\n"
+            f"{PARTNER_KIT_URL}\n\n"
+            f"Start submitting client leads today to earn flat commissions on every closed project!\n\n"
+            f"Best regards,\n"
+            f"Core Team — Urbanix Solutions"
+        )
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online'),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            logger.info(f"[CALL PARTNER APPROVED] Welcome email sent to {email}")
+            print(f"[CALL PARTNER APPROVED] Welcome email sent to {email}")
+        except Exception as e:
+            logger.error(f"[CALL PARTNER EMAIL ERROR] Failed to send email to {email}: {e}")
+            print(f"[CALL PARTNER EMAIL ERROR] Failed to send email to {email}: {e}")
+
+
+@admin.register(ClientLead)
+class ClientLeadAdmin(admin.ModelAdmin):
+    """
+    Manage client leads submitted by Call Partners.
+    """
+    list_display  = ['client_name', 'partner_display', 'project_type', 'discussed_price', 'status_badge', 'client_phone', 'created_at']
+    list_filter   = ['status', 'project_type', 'created_at']
+    search_fields = ['client_name', 'client_phone', 'partner__username', 'partner__email', 'partner__first_name', 'partner__last_name']
+    ordering      = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    autocomplete_fields = ['partner']
+
+
+    @admin.display(description='Referred By (Partner)')
+    def partner_display(self, obj):
+        return f"{obj.partner.get_full_name() or obj.partner.username} ({obj.partner.email})"
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        colors = {
+            'Under Review':                 ('#f59e0b', '#fffbeb'),
+            'Approved':                     ('#06b6d4', '#ecfeff'),
+            'Payment Processed - 48 Hours': ('#10b981', '#ecfdf5'),
+            'Rejected':                     ('#ef4444', '#fef2f2'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">{}</span>',
+            fg, bg, obj.status
+        )
+
+
 
 

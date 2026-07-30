@@ -22,12 +22,17 @@ export const TaskBoardView: React.FC<TaskBoardViewProps> = ({ initialTasks }) =>
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskProject, setNewTaskProject] = useState('Apex Financial Platform');
 
+  React.useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
   const columns: { id: TaskItem['status']; label: string; color: string }[] = [
     { id: 'todo', label: 'To Do Queue', color: 'border-cyan-500/40 text-cyan-400' },
     { id: 'in_progress', label: 'In Progress', color: 'border-blue-500/40 text-blue-400' },
     { id: 'in_review', label: 'Under Review', color: 'border-amber-500/40 text-amber-400' },
     { id: 'done', label: 'Completed', color: 'border-emerald-500/40 text-emerald-400' },
   ];
+
 
   const moveTaskStatus = (taskId: string, nextStatus: TaskItem['status']) => {
     setTasks((prev) =>
