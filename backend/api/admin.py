@@ -329,45 +329,53 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
 
     def delete_model(self, request, obj):
-        """Hard delete single CareerApplication record and cleanup linked User & TeamMember records.
-        PROTECTION: Blocks accidental deletion of Pending applications.
-        """
-        if obj.hire_status == 'Pending':
-            messages.error(
-                request,
-                f"⛔ Cannot delete '{obj.name}' — this application is still PENDING. "
-                "Change the status to Rejected first before deleting."
-            )
-            return
-        email = obj.email
-        obj.delete()
-        if email:
-            User.objects.filter(email__iexact=email.strip()).delete()
-            TeamMember.objects.filter(email__iexact=email.strip()).delete()
+        """Hard delete single CareerApplication record and cleanup linked User & TeamMember records cleanly."""
+        try:
+            email = str(getattr(obj, 'email', '') or '').strip()
+
+            # Execute standard Django Admin deletion
+            super().delete_model(request, obj)
+
+            # Safely clean up associated records without crashing post-delete response
+            if email:
+                try:
+                    User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                except Exception as u_err:
+                    logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                try:
+                    TeamMember.objects.filter(email__iexact=email).delete()
+                except Exception as tm_err:
+                    logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during CareerApplication deletion: {e}")
+            messages.error(request, f"Deletion completed with cleanup warning: {str(e)}")
 
     def delete_queryset(self, request, queryset):
-        """Hard delete selected CareerApplication records and cleanup linked User & TeamMember records.
-        PROTECTION: Pending applications are skipped and a warning is shown.
-        """
-        # Separate pending (protected) from deletable records
-        pending = queryset.filter(hire_status='Pending')
-        deletable = queryset.exclude(hire_status='Pending')
+        """Hard delete selected CareerApplication records and cleanup linked User & TeamMember records cleanly."""
+        try:
+            emails = []
+            for item in queryset:
+                em = str(getattr(item, 'email', '') or '').strip()
+                if em:
+                    emails.append(em)
 
-        if pending.exists():
-            pending_names = ', '.join(pending.values_list('name', flat=True)[:5])
-            messages.warning(
-                request,
-                f"⛔ {pending.count()} PENDING application(s) were PROTECTED and NOT deleted: "
-                f"{pending_names}. Only Rejected/Hired records were removed."
-            )
+            # Execute standard Django Admin bulk deletion
+            super().delete_queryset(request, queryset)
 
-        # Only delete non-pending records
-        emails = list(deletable.values_list('email', flat=True))
-        deletable.delete()
-        for email in emails:
-            if email:
-                User.objects.filter(email__iexact=email.strip()).delete()
-                TeamMember.objects.filter(email__iexact=email.strip()).delete()
+            for email in emails:
+                if email:
+                    try:
+                        User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                    except Exception as u_err:
+                        logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                    try:
+                        TeamMember.objects.filter(email__iexact=email).delete()
+                    except Exception as tm_err:
+                        logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during CareerApplication bulk deletion: {e}")
+            messages.error(request, f"Bulk deletion completed with cleanup warning: {str(e)}")
+
 
 
     @admin.display(description='Status Badge', boolean=False)
@@ -621,21 +629,50 @@ class AgencyPartnerLeadAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
     def delete_model(self, request, obj):
-        """Hard delete single AgencyPartnerLead record and cleanup linked User & TeamMember records."""
-        email = obj.email
-        obj.delete()
-        if email:
-            User.objects.filter(email__iexact=email.strip()).delete()
-            TeamMember.objects.filter(email__iexact=email.strip()).delete()
+        """Hard delete single AgencyPartnerLead record and cleanup linked User & TeamMember records cleanly."""
+        try:
+            email = str(getattr(obj, 'email', '') or '').strip()
+
+            super().delete_model(request, obj)
+
+            if email:
+                try:
+                    User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                except Exception as u_err:
+                    logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                try:
+                    TeamMember.objects.filter(email__iexact=email).delete()
+                except Exception as tm_err:
+                    logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during AgencyPartnerLead deletion: {e}")
+            messages.error(request, f"Deletion completed with cleanup warning: {str(e)}")
 
     def delete_queryset(self, request, queryset):
-        """Hard delete selected AgencyPartnerLead records and cleanup linked User & TeamMember records."""
-        emails = list(queryset.values_list('email', flat=True))
-        queryset.delete()
-        for email in emails:
-            if email:
-                User.objects.filter(email__iexact=email.strip()).delete()
-                TeamMember.objects.filter(email__iexact=email.strip()).delete()
+        """Hard delete selected AgencyPartnerLead records and cleanup linked User & TeamMember records cleanly."""
+        try:
+            emails = []
+            for item in queryset:
+                em = str(getattr(item, 'email', '') or '').strip()
+                if em:
+                    emails.append(em)
+
+            super().delete_queryset(request, queryset)
+
+            for email in emails:
+                if email:
+                    try:
+                        User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                    except Exception as u_err:
+                        logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                    try:
+                        TeamMember.objects.filter(email__iexact=email).delete()
+                    except Exception as tm_err:
+                        logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during AgencyPartnerLead bulk deletion: {e}")
+            messages.error(request, f"Bulk deletion completed with cleanup warning: {str(e)}")
+
 
     @admin.display(description='Status')
     def status_badge(self, obj):
@@ -1023,21 +1060,50 @@ class CallPartnerApplicationAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
     def delete_model(self, request, obj):
-        """Hard delete single CallPartnerApplication record and cleanup linked User & TeamMember records."""
-        email = obj.email
-        obj.delete()
-        if email:
-            User.objects.filter(email__iexact=email.strip()).delete()
-            TeamMember.objects.filter(email__iexact=email.strip()).delete()
+        """Hard delete single CallPartnerApplication record and cleanup linked User & TeamMember records cleanly."""
+        try:
+            email = str(getattr(obj, 'email', '') or '').strip()
+
+            super().delete_model(request, obj)
+
+            if email:
+                try:
+                    User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                except Exception as u_err:
+                    logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                try:
+                    TeamMember.objects.filter(email__iexact=email).delete()
+                except Exception as tm_err:
+                    logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during CallPartnerApplication deletion: {e}")
+            messages.error(request, f"Deletion completed with cleanup warning: {str(e)}")
 
     def delete_queryset(self, request, queryset):
-        """Hard delete selected CallPartnerApplication records and cleanup linked User & TeamMember records."""
-        emails = list(queryset.values_list('email', flat=True))
-        queryset.delete()
-        for email in emails:
-            if email:
-                User.objects.filter(email__iexact=email.strip()).delete()
-                TeamMember.objects.filter(email__iexact=email.strip()).delete()
+        """Hard delete selected CallPartnerApplication records and cleanup linked User & TeamMember records cleanly."""
+        try:
+            emails = []
+            for item in queryset:
+                em = str(getattr(item, 'email', '') or '').strip()
+                if em:
+                    emails.append(em)
+
+            super().delete_queryset(request, queryset)
+
+            for email in emails:
+                if email:
+                    try:
+                        User.objects.filter(email__iexact=email).exclude(id=request.user.id).delete()
+                    except Exception as u_err:
+                        logger.warning(f"Could not cleanup User for email '{email}': {u_err}")
+                    try:
+                        TeamMember.objects.filter(email__iexact=email).delete()
+                    except Exception as tm_err:
+                        logger.warning(f"Could not cleanup TeamMember for email '{email}': {tm_err}")
+        except Exception as e:
+            logger.exception(f"Error during CallPartnerApplication bulk deletion: {e}")
+            messages.error(request, f"Bulk deletion completed with cleanup warning: {str(e)}")
+
 
 
 
