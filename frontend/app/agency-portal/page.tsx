@@ -25,19 +25,20 @@ import {
   PayoutRecord,
   NotificationItem
 } from '@/components/dashboard/mockData';
+import { getApiBase } from '@/lib/api';
 
 export default function AgencyPortalPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   
   // Dashboard State (Populated dynamically from Django REST API /api/dashboard-data/)
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
-  const [deliverables, setDeliverables] = useState<Deliverable[]>(INITIAL_DELIVERABLES);
-  const [payouts, setPayouts] = useState<PayoutRecord[]>(INITIAL_PAYOUTS);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   // Modals state
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -55,7 +56,8 @@ export default function AgencyPortalPage() {
       setIsLoadingData(true);
 
       // Authenticate via Magic Login Endpoint
-      fetch(`http://127.0.0.1:8000/api/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
+      const base = getApiBase();
+      fetch(`${base}/auth/magic-login/?token=${encodeURIComponent(magicToken)}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error("Invalid or expired magic token.");
@@ -84,7 +86,8 @@ export default function AgencyPortalPage() {
         headers['Authorization'] = `Token ${token}`;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/dashboard-data/`, {
+      const base = getApiBase();
+      const response = await fetch(`${base}/dashboard-data/`, {
         headers,
       });
 
@@ -197,7 +200,11 @@ export default function AgencyPortalPage() {
           notifications={notifications}
           onLogout={handleLogout}
           onOpenSupportModal={() => setIsSupportModalOpen(true)}
+          projectCount={projects.length}
+          taskCount={tasks.length}
+          payoutCount={payouts.length}
         >
+
           {activeTab === 'dashboard' && (
             <DashboardHome
               projects={projects}

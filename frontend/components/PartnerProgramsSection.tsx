@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -19,9 +19,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Send
+  Send,
+  RotateCw,
+  AlertTriangle
 } from 'lucide-react'
-import { submitCallPartnerApplication } from '@/lib/api'
+import { submitCallPartnerApplication, fetchCaptcha } from '@/lib/api'
 
 export default function PartnerProgramsSection() {
   // Modal state for Call Partner Program
@@ -33,13 +35,52 @@ export default function PartnerProgramsSection() {
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
+  // Captcha State
+  const [captchaId, setCaptchaId] = useState('')
+  const [captchaImage, setCaptchaImage] = useState('')
+  const [captchaInput, setCaptchaInput] = useState('')
+  const [captchaLoading, setCaptchaLoading] = useState(false)
+  const [captchaError, setCaptchaError] = useState(false)
+
+  const loadCaptcha = useCallback(async () => {
+    setCaptchaLoading(true)
+    setCaptchaError(false)
+    try {
+      const res = await fetchCaptcha()
+      if (res && res.image_base64) {
+        setCaptchaId(res.captcha_id)
+        setCaptchaImage(res.image_base64)
+        setCaptchaInput('')
+        setCaptchaError(false)
+      } else {
+        setCaptchaError(true)
+      }
+    } catch (err) {
+      console.error('Failed to load CAPTCHA:', err)
+      setCaptchaError(true)
+    } finally {
+      setCaptchaLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isModalOpen) {
+      loadCaptcha()
+    }
+  }, [isModalOpen, loadCaptcha])
+
   const handleModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
     setSuccessMessage('')
 
     if (!fullName.trim() || !email.trim() || !whatsappNumber.trim()) {
-      setErrorMessage('Please fill in all fields.')
+      setErrorMessage('Please fill in all required fields.')
+      return
+    }
+
+    if (!captchaInput.trim()) {
+      setErrorMessage('Please enter the CAPTCHA characters shown in the image.')
       return
     }
 
@@ -49,6 +90,8 @@ export default function PartnerProgramsSection() {
         full_name: fullName.trim(),
         email: email.trim(),
         whatsapp_number: whatsappNumber.trim(),
+        captcha_id: captchaId,
+        captcha_input: captchaInput.trim(),
       })
 
       if (res.success) {
@@ -56,15 +99,19 @@ export default function PartnerProgramsSection() {
         setFullName('')
         setEmail('')
         setWhatsappNumber('')
+        setCaptchaInput('')
       } else {
         setErrorMessage(res.error || 'Failed to submit application. Please try again.')
+        loadCaptcha()
       }
     } catch (err: any) {
       setErrorMessage('Network error. Please check your connection and try again.')
+      loadCaptcha()
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   return (
     <section className="relative py-8 md:py-12 text-[#f5f5f7]">
@@ -402,6 +449,63 @@ export default function PartnerProgramsSection() {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-emerald-400 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none transition-colors"
                     />
                   </div>
+
+                  {/* Self-Hosted Text CAPTCHA Widget */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+                      Human Verification CAPTCHA <span className="text-red-400">*</span>
+                    </label>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {captchaLoading ? (
+                          <div className="h-10 w-[150px] shrink-0 rounded-lg border border-slate-800 bg-[#080c14] animate-pulse flex items-center justify-center text-[10px] text-slate-500">
+                            Loading CAPTCHA...
+                          </div>
+                        ) : captchaError || !captchaImage ? (
+                          <div className="h-10 w-[150px] shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-2 flex items-center justify-between gap-1 text-[10px] font-semibold text-red-400">
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle size={12} className="shrink-0" />
+                              Failed
+                            </span>
+                            <button
+                              type="button"
+                              onClick={loadCaptcha}
+                              className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-white text-[9px] font-bold uppercase transition-colors shrink-0"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        ) : (
+                          <img
+                            src={captchaImage}
+                            alt="Security CAPTCHA"
+                            className="h-10 w-[150px] shrink-0 rounded-lg border border-slate-700 bg-[#0d1320] px-2 py-1 select-none object-fill shadow-inner"
+                          />
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={loadCaptcha}
+                          disabled={captchaLoading}
+                          title="Generate new CAPTCHA"
+                          className="h-10 w-10 rounded-lg border border-slate-700 bg-[#080c14] hover:bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white transition-colors shrink-0"
+                        >
+                          <RotateCw size={14} className={captchaLoading ? 'animate-spin' : ''} />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        required
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value)}
+                        placeholder="Enter CAPTCHA text"
+                        className="w-full px-3 py-2 bg-[#080c14] border border-slate-800 focus:border-emerald-400 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
 
                   {/* Submit Button */}
                   <button

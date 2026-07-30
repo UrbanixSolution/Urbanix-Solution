@@ -158,11 +158,13 @@ class CareerApplicationSerializer(serializers.ModelSerializer):
         if phone:
             query |= Q(phone__iexact=phone)
 
-        if query and CareerApplication.objects.filter(query).exists():
+        # Exclude rejected applications so rejected candidates can re-apply
+        if query and CareerApplication.objects.filter(query).exclude(hire_status='Rejected').exists():
             raise serializers.ValidationError(
                 "An application with this email or phone number is already registered."
             )
         return attrs
+
 
 
 class WebsiteFeedbackSerializer(serializers.ModelSerializer):
@@ -454,11 +456,13 @@ class CallPartnerApplicationSerializer(serializers.ModelSerializer):
         if whatsapp:
             query |= Q(whatsapp_number__iexact=whatsapp)
 
-        if query and CallPartnerApplication.objects.filter(query).exists():
+        # Exclude rejected applications so rejected candidates can re-apply
+        if query and CallPartnerApplication.objects.filter(query).exclude(status='Rejected').exists():
             raise serializers.ValidationError(
                 "An application with this email or WhatsApp number is already registered."
             )
         return attrs
+
 
 
 class ClientLeadSerializer(serializers.ModelSerializer):

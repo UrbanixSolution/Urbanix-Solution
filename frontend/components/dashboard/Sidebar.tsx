@@ -24,6 +24,9 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   user: UserProfile;
   onLogout: () => void;
+  projectCount?: number;
+  taskCount?: number;
+  payoutCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,6 +36,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   user,
   onLogout,
+  projectCount = 0,
+  taskCount = 0,
+  payoutCount = 0,
 }) => {
   const canViewFinance = user.permissions?.can_view_financials_and_payouts ?? user.permissions?.can_view_finance ?? true;
 
@@ -47,13 +53,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'projects' as DashboardTab,
       label: 'My Projects',
       icon: FolderKanban,
-      badge: '4',
+      badge: projectCount > 0 ? String(projectCount) : null,
     },
     {
       id: 'tasks' as DashboardTab,
       label: 'Task Board',
       icon: CheckSquare,
-      badge: '7',
+      badge: taskCount > 0 ? String(taskCount) : null,
     },
     {
       id: 'deliverables' as DashboardTab,
@@ -67,11 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             id: 'payouts' as DashboardTab,
             label: 'Payouts',
             icon: Wallet,
-            badge: '₹1.45L',
+            badge: payoutCount > 0 ? String(payoutCount) : null,
           },
         ]
       : []),
   ];
+
 
   return (
     <aside

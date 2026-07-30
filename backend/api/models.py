@@ -283,6 +283,11 @@ class UserProfile(models.Model):
         default=False,
         help_text="If True, user is an approved Call Partner who can submit client leads for commission."
     )
+    is_agency_partner = models.BooleanField(
+        default=False,
+        help_text="If True, user is an approved B2B Agency Partner."
+    )
+
 
 
     send_update_email = models.BooleanField(
@@ -395,6 +400,12 @@ class AgencyPartnerLead(models.Model):
         ('15+', '15+ Members'),
     ]
 
+    STATUS_CHOICES = [
+        ('Pending',  'Pending'),
+        ('Accepted', 'Accepted'),
+        ('Rejected', 'Rejected'),
+    ]
+
     company_name = models.CharField(max_length=250, help_text="Agency or Company Name")
     contact_person = models.CharField(max_length=200, help_text="Primary Contact Person")
     whatsapp_number = models.CharField(max_length=30, help_text="WhatsApp Number for Project Handover")
@@ -406,7 +417,14 @@ class AgencyPartnerLead(models.Model):
     district = models.CharField(max_length=100, blank=True, help_text="District")
     town = models.CharField(max_length=100, blank=True, help_text="Town or City")
     proposal = models.TextField(blank=True, help_text="Brief pitch or overflow capacity details")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='Pending',
+        help_text="Application approval status. Changing to 'Accepted' automatically creates a User account and dispatches welcome email."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
 
     class Meta:
         ordering = ['-created_at']
@@ -579,8 +597,10 @@ class AssignedPayout(models.Model):
         ('Pending Approval', 'Pending Approval'),
         ('Processing',       'Processing'),
         ('Paid',             'Paid'),
+        ('Completed',        'Completed'),
         ('On Hold',          'On Hold'),
     ]
+
 
     # ── Core assignment ────────────────────────────────────────────────────
     assigned_to = models.ForeignKey(

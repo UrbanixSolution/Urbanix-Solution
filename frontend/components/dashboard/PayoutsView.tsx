@@ -26,8 +26,9 @@ export const PayoutsView: React.FC<PayoutsViewProps> = ({ payouts }) => {
     .reduce((sum, item) => sum + item.totalAmount, 0);
 
   const paidTotal = payouts
-    .filter((p) => p.status === 'Paid')
+    .filter((p) => p.status === 'Paid' || p.status === 'Completed')
     .reduce((sum, item) => sum + item.totalAmount, 0);
+
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -167,7 +168,7 @@ export const PayoutsView: React.FC<PayoutsViewProps> = ({ payouts }) => {
                     <td className="py-3.5 px-3">
                       <span
                         className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
-                          item.status === 'Paid'
+                          item.status === 'Paid' || item.status === 'Completed'
                             ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
                             : 'bg-amber-950 text-amber-400 border border-amber-500/30'
                         }`}
@@ -175,6 +176,7 @@ export const PayoutsView: React.FC<PayoutsViewProps> = ({ payouts }) => {
                         {item.status}
                       </span>
                     </td>
+
                     <td className="py-3.5 px-3 text-right">
                       <button
                         onClick={() => alert(`Downloading PDF invoice ${item.invoiceNo}...`)}

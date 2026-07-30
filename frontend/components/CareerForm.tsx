@@ -284,14 +284,15 @@ export default function CareerForm() {
           />
 
           <div className="mb-8">
-            <p className="label-caps mb-2">Join Our Talent Network</p>
+            <p className="label-caps mb-2">JOIN THE CORE TEAM</p>
             <h2 className="heading-serif text-2xl sm:text-3xl text-white">
-              Application Form
+              Core Team Direct Application
             </h2>
             <p className="text-xs text-[#8892a4] mt-1">
-              Submit your details below for local and remote project assignments. Our team will contact you within 48 hours.
+              Submit your details below to officially apply for a permanent position in the Urbanix Core Team. Only accepted candidates will receive internal CRM access.
             </p>
           </div>
+
 
           {status === 'success' ? (
             <motion.div

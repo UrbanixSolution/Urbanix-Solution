@@ -479,7 +479,10 @@ export async function submitCallPartnerApplication(payload: {
   full_name: string;
   email: string;
   whatsapp_number: string;
+  captcha_id?: string;
+  captcha_input?: string;
 }): Promise<{ success: boolean; data?: any; error?: string }> {
+
   const base = getApiBase();
   try {
     const res = await fetch(`${base}/call-partner/apply/`, {

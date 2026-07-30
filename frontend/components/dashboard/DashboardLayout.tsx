@@ -13,6 +13,9 @@ interface DashboardLayoutProps {
   notifications: NotificationItem[];
   onLogout: () => void;
   onOpenSupportModal: () => void;
+  projectCount?: number;
+  taskCount?: number;
+  payoutCount?: number;
   children: React.ReactNode;
 }
 
@@ -23,6 +26,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   notifications,
   onLogout,
   onOpenSupportModal,
+  projectCount,
+  taskCount,
+  payoutCount,
   children,
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -44,6 +50,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           user={user}
           onLogout={onLogout}
+          projectCount={projectCount}
+          taskCount={taskCount}
+          payoutCount={payoutCount}
         />
       </div>
 
@@ -83,11 +92,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 onToggleCollapse={() => {}}
                 user={user}
                 onLogout={onLogout}
+                projectCount={projectCount}
+                taskCount={taskCount}
+                payoutCount={payoutCount}
               />
             </div>
           </div>
         </div>
       )}
+
 
       {/* Main Content Area */}
       <div

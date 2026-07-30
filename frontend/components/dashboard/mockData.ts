@@ -67,7 +67,8 @@ export interface PayoutRecord {
   baseAmount: number; // INR
   bonusAmount: number; // INR
   totalAmount: number; // INR
-  status: 'Paid' | 'Pending Approval' | 'Processing';
+  status: 'Paid' | 'Completed' | 'Pending Approval' | 'Processing' | 'On Hold';
+
   dueDate: string;
   paidDate?: string;
 }

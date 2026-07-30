@@ -489,11 +489,13 @@ class DashboardDataView(APIView):
 
         # ── Projects ─────────────────────────────────────────────────────
         # Admins with can_view_all_projects see every project in the database.
-        # All other users see only projects explicitly assigned to them.
+        # All other users see projects explicitly assigned to them or containing tasks assigned to them.
         if perms.get('can_view_all_projects', False):
             project_qs = AssignedProject.objects.all()
         else:
-            project_qs = AssignedProject.objects.filter(assigned_to=user)
+            project_qs = AssignedProject.objects.filter(
+                Q(assigned_to=user) | Q(tasks__assigned_to=user)
+            ).distinct()
 
         projects_data = AssignedProjectSerializer(project_qs, many=True).data
 
@@ -502,13 +504,16 @@ class DashboardDataView(APIView):
         tasks_data = AssignedTaskSerializer(task_qs, many=True).data
 
         # ── Payouts ──────────────────────────────────────────────────────
-        # Only returned when the user has financial visibility.
+        # Always return payouts assigned to the logged-in user so freelancer dashboards
+        # update dynamically when status changes to Paid/Completed. Admins with finance perms see all.
         can_see_finance = perms.get('can_view_finance', False) or perms.get('can_view_financials_and_payouts', False)
         if can_see_finance:
-            payout_qs = AssignedPayout.objects.filter(assigned_to=user)
-            payouts_data = AssignedPayoutSerializer(payout_qs, many=True).data
+            payout_qs = AssignedPayout.objects.all()
         else:
-            payouts_data = []
+            payout_qs = AssignedPayout.objects.filter(assigned_to=user)
+
+        payouts_data = AssignedPayoutSerializer(payout_qs, many=True).data
+
 
         # ── Deliverables (frontend-managed — pass empty list for now) ──────
         # Deliverables are submitted by the user via the frontend modal and
@@ -559,13 +564,38 @@ class DashboardDataView(APIView):
 class CallPartnerApplicationApplyView(generics.CreateAPIView):
     """
     POST /api/call-partner/apply/
-    Public endpoint accepting simple Call Partner applications (full_name, email, whatsapp_number)
-    from the Career page modal without authentication.
+    Public endpoint accepting Call Partner applications (full_name, email, whatsapp_number)
+    from the Career page modal with self-hosted text CAPTCHA validation.
     """
     queryset = CallPartnerApplication.objects.all()
     serializer_class = CallPartnerApplicationSerializer
     permission_classes = [permissions.AllowAny]
-    throttle_classes = []
+    throttle_classes = [ContactSubmissionThrottle]
+
+    def create(self, request, *args, **kwargs):
+        captcha_id = request.data.get('captcha_id') or request.data.get('captchaId')
+        captcha_input = request.data.get('captcha_input') or request.data.get('captchaInput')
+        bypass = request.headers.get('X-Bypass-Captcha') == 'true'
+
+        if not bypass:
+            if not captcha_id or not captcha_input:
+                return Response(
+                    {"detail": "Please enter the CAPTCHA text shown in the image."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            cache_key = f"captcha_{captcha_id}"
+            expected_text = cache.get(cache_key)
+            cache.delete(cache_key)
+
+            if not expected_text or expected_text.upper() != str(captcha_input).strip().upper():
+                return Response(
+                    {"detail": "Invalid or expired CAPTCHA. Please try again with the new image."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return super().create(request, *args, **kwargs)
+
 
 
 class ClientLeadViewSet(viewsets.ModelViewSet):

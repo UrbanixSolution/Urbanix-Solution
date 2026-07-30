@@ -466,3 +466,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your_email@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'pnzg ewlo qbfe wfix')
 DEFAULT_FROM_EMAIL = f"Urbanix Solution <{EMAIL_HOST_USER}>"
+
+# ---------------------------------------------------------------------------
+# Security & Iframe Popup Settings
+# Allow Django Admin popups and iframe embeds from same origin
+# ---------------------------------------------------------------------------
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+

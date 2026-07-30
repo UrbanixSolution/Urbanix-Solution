@@ -216,11 +216,12 @@ class CareerApplicationAdmin(admin.ModelAdmin):
 
         super().save_model(request, obj, form, change)
 
-        # Process hiring & email explicitly when hire_status == 'Hired' and send_hired_email is True
-        if obj.hire_status == 'Hired' and obj.send_hired_email:
+        # Process hiring & team database routing when hire_status in ['Hired', 'Accepted'] or send_hired_email is True
+        if (obj.hire_status in ['Hired', 'Accepted']) and obj.send_hired_email:
             try:
-                user_exists = User.objects.filter(email=obj.email).exists()
-                if not user_exists:
+                # 1. Duplicate check: look up existing User by email
+                user = User.objects.filter(email__iexact=obj.email.strip()).first()
+                if not user:
                     employee_id = generate_unique_employee_id(obj.name, getattr(obj, 'created_at', None))
                     raw_password = generate_secure_password(8)
 
@@ -228,15 +229,14 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     first_name = name_parts[0]
                     last_name = name_parts[1] if len(name_parts) > 1 else ''
 
-                    # --- AUTH FIX: create_user() hashes the password correctly ---
                     user = User(
                         username=employee_id,
-                        email=obj.email,
+                        email=obj.email.strip().lower(),
                         first_name=first_name,
                         last_name=last_name,
                         is_staff=True,
                     )
-                    user.set_password(raw_password)  # explicit hash
+                    user.set_password(raw_password)
                     user.save()
 
                     dept = 'Engineering'
@@ -256,24 +256,24 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                         is_agency_admin=False,
                     )
                 else:
-                    user = User.objects.get(email=obj.email)
                     profile = UserProfile.objects.filter(user=user).first()
                     employee_id = profile.employee_id if profile else user.username
                     raw_password = generate_secure_password(8)
-                    user.set_password(raw_password)  # explicit hash
+                    user.set_password(raw_password)
                     user.save()
 
-                # --- PROFILE ROUTING based on team_category ---
-                team_category = obj.team_category or 'Freelancer Team'
+                # 2. STRICT TEAM ROUTING LOGIC
+                # Default for main Career Application form is 'Core Team'
+                team_category = obj.team_category or 'Core Team'
                 assigned_services_qs = obj.assigned_services.all()
                 assigned_services_list = ', '.join(s.title for s in assigned_services_qs) if assigned_services_qs.exists() else 'None assigned'
 
                 if team_category == 'Freelancer Team':
-                    # Create / update Freelancer Team (TeamMember) profile
+                    # ROUTE TO FREELANCE TEAM (crm.TeamMember)
                     freelancer_profile, _ = TeamMember.objects.update_or_create(
-                        name=obj.name,
+                        email=obj.email.strip().lower(),
                         defaults={
-                            'email': obj.email,
+                            'name': obj.name,
                             'role': obj.role_applied,
                             'is_freelancer': True,
                             'standard_charge': 0.00,
@@ -281,17 +281,19 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                             'total_tasks_completed': 0,
                         }
                     )
-                    # Sync authorized services to the Freelancer profile
-                    freelancer_profile.services.set(assigned_services_qs)
-                # For 'Core Team', a UserProfile (already created above) is the profile.
-                # No TeamMember row is created — Core Team members are staff users only.
+                    if assigned_services_qs.exists():
+                        freelancer_profile.services.set(assigned_services_qs)
+                else:
+                    # ROUTE TO CORE TEAM (User + UserProfile ONLY)
+                    # Ensure applicant is NOT duplicated in TeamMember (Freelance Team)
+                    TeamMember.objects.filter(email__iexact=obj.email.strip()).delete()
 
                 CareerApplication.objects.filter(id=obj.id).update(
                     hire_status='Hired',
                     is_converted=True
                 )
 
-                # Generate Token for Magic Link
+                # Generate Token for Magic Link / Onboarding
                 from rest_framework.authtoken.models import Token
                 token_obj, _ = Token.objects.get_or_create(user=user)
 
@@ -306,38 +308,35 @@ class CareerApplicationAdmin(admin.ModelAdmin):
                     team_category=team_category,
                     assigned_services_list=assigned_services_list,
                 )
-                # Mark as handled so the post_save signal skips re-processing
+
                 obj._admin_handled = True
-                messages.success(request, f"Account created and email sent successfully to {obj.email}!")
+                messages.success(request, f"Applicant {obj.name} accepted! Account created and routed to {team_category}.")
 
             except Exception as e:
-                logger.exception(f"Failed to process hired candidate email for {obj.email}: {e}")
-                messages.error(request, f"Error: Failed to process - {str(e)}")
+                logger.exception(f"Failed to process accepted candidate for {obj.email}: {e}")
+                messages.error(request, f"Error: Failed to process application - {str(e)}")
 
             finally:
-                # Reset send_hired_email checkbox safely
                 CareerApplication.objects.filter(id=obj.id).update(send_hired_email=False)
 
+
     def delete_model(self, request, obj):
-        """Hard delete single CareerApplication record from Supabase PostgreSQL database."""
+        """Hard delete single CareerApplication record and cleanup linked User & TeamMember records."""
+        email = obj.email
         obj.delete()
+        if email:
+            User.objects.filter(email__iexact=email.strip()).delete()
+            TeamMember.objects.filter(email__iexact=email.strip()).delete()
 
     def delete_queryset(self, request, queryset):
-        """Hard delete selected CareerApplication records from Supabase PostgreSQL database."""
+        """Hard delete selected CareerApplication records and cleanup linked User & TeamMember records."""
+        emails = list(queryset.values_list('email', flat=True))
         queryset.delete()
+        for email in emails:
+            if email:
+                User.objects.filter(email__iexact=email.strip()).delete()
+                TeamMember.objects.filter(email__iexact=email.strip()).delete()
 
-    def get_queryset(self, request):
-        """
-        OVERRIDE get_queryset:
-        Excludes candidates with hire_status == 'Hired' or is_converted == True
-        from the default changelist view unless explicitly filtered.
-        """
-        qs = super().get_queryset(request)
-        # Check if request parameters explicitly filter by hire_status or is_converted
-        is_filtering = any(k.startswith('hire_status') or k.startswith('is_converted') for k in request.GET.keys())
-        if not is_filtering:
-            qs = qs.exclude(hire_status='Hired').exclude(is_converted=True)
-        return qs
 
     @admin.display(description='Status Badge', boolean=False)
     def hire_badge(self, obj):
@@ -573,11 +572,165 @@ class WebsiteFeedbackAdmin(admin.ModelAdmin):
 
 @admin.register(AgencyPartnerLead)
 class AgencyPartnerLeadAdmin(admin.ModelAdmin):
-    list_display = ['company_name', 'contact_person', 'core_services', 'state', 'district', 'town', 'whatsapp_number', 'team_size', 'created_at']
-    list_filter = ['core_services', 'team_size', 'state', 'created_at']
+    """
+    Manage B2B Agency Partner Applications.
+
+    When an application status is changed to "Accepted":
+    1. Automatically creates a Django User account if none exists.
+    2. Assigns the user an Agency Partner profile (is_agency_partner=True).
+    3. Generates a DRF Auth Token.
+    4. Routes the applicant to FreelanceTeam (crm.TeamMember).
+    5. Sends a Welcome Email with login details and portal URL.
+    """
+    list_display  = ['company_name', 'contact_person', 'email', 'whatsapp_number', 'core_services', 'team_size', 'status_badge', 'created_at']
+    list_filter   = ['status', 'core_services', 'team_size', 'state', 'created_at']
     search_fields = ['company_name', 'contact_person', 'email', 'whatsapp_number', 'state', 'district', 'town', 'proposal']
-    ordering = ['-created_at']
+    ordering      = ['-created_at']
     readonly_fields = ['created_at']
+
+    def delete_model(self, request, obj):
+        """Hard delete single AgencyPartnerLead record and cleanup linked User & TeamMember records."""
+        email = obj.email
+        obj.delete()
+        if email:
+            User.objects.filter(email__iexact=email.strip()).delete()
+            TeamMember.objects.filter(email__iexact=email.strip()).delete()
+
+    def delete_queryset(self, request, queryset):
+        """Hard delete selected AgencyPartnerLead records and cleanup linked User & TeamMember records."""
+        emails = list(queryset.values_list('email', flat=True))
+        queryset.delete()
+        for email in emails:
+            if email:
+                User.objects.filter(email__iexact=email.strip()).delete()
+                TeamMember.objects.filter(email__iexact=email.strip()).delete()
+
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        colors = {
+            'Pending':  ('#f59e0b', '#fffbeb'),
+            'Accepted': ('#10b981', '#ecfdf5'),
+            'Rejected': ('#ef4444', '#fef2f2'),
+        }
+        fg, bg = colors.get(obj.status, ('#374151', '#f9fafb'))
+        return format_html(
+            '<span style="color:{};background:{};padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">{}</span>',
+            fg, bg, obj.status
+        )
+
+    def save_model(self, request, obj, form, change):
+        is_new_approval = False
+        if change:
+            old_obj = AgencyPartnerLead.objects.filter(pk=obj.pk).first()
+            if old_obj and old_obj.status != 'Accepted' and obj.status == 'Accepted':
+                is_new_approval = True
+        elif obj.status == 'Accepted':
+            is_new_approval = True
+
+        super().save_model(request, obj, form, change)
+
+        if is_new_approval:
+            self._handle_agency_partner_approval(obj, request)
+
+    def _handle_agency_partner_approval(self, application, request=None):
+        from crm.models import TeamMember
+        email = application.email.strip().lower()
+        contact_person = application.contact_person.strip()
+        names = contact_person.split(' ', 1)
+        first_name = names[0]
+        last_name = names[1] if len(names) > 1 else ''
+
+        user = User.objects.filter(email__iexact=email).first()
+        raw_password = None
+
+        if not user:
+            alphabet = string.ascii_letters + string.digits
+            raw_password = ''.join(secrets.choice(alphabet) for _ in range(10))
+            username = email.split('@')[0][:30]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=raw_password,
+                first_name=first_name,
+                last_name=last_name,
+                is_staff=True,
+            )
+        else:
+            raw_password = "[Your existing password]"
+
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'employee_id': f"AP-{user.id:04d}",
+                'role': f"Agency Partner ({application.company_name})",
+                'department': 'Agency Partnerships',
+                'is_agency_partner': True,
+                'can_view_finance': False,
+                'can_view_all_projects': False,
+            }
+        )
+        if not profile.is_agency_partner:
+            profile.is_agency_partner = True
+            profile.role = f"Agency Partner ({application.company_name})"
+            profile.department = 'Agency Partnerships'
+            profile.save()
+
+        # ROUTE TO FREELANCE TEAM (crm.TeamMember)
+        TeamMember.objects.update_or_create(
+            email=email,
+            defaults={
+                'name': f"{contact_person} ({application.company_name})",
+                'role': 'Agency Partner',
+                'is_freelancer': True,
+                'standard_charge': 0.00,
+                'average_rating': 5.0,
+                'total_tasks_completed': 0,
+            }
+        )
+
+        # Ensure DRF Token exists
+        from rest_framework.authtoken.models import Token
+        Token.objects.get_or_create(user=user)
+
+        # Dispatch Welcome Email
+        login_url = "https://urbanixsolution.online/agency-portal"
+        subject = "Welcome to Urbanix Agency Partner Network! 🤝🚀"
+        message = (
+            f"Hello {contact_person},\n\n"
+            f"Congratulations! Your application for {application.company_name} to join the Urbanix Agency Partner Network has been ACCEPTED.\n\n"
+            f"Here are your login credentials to access your Agency Partner Dashboard:\n"
+            f"--------------------------------------------------\n"
+            f"Portal Login URL: {login_url}\n"
+            f"Username: {user.username}\n"
+            f"Email: {email}\n"
+            f"Password: {raw_password}\n"
+            f"Partner ID: AP-{user.id:04d}\n"
+            f"--------------------------------------------------\n\n"
+            f"You can now log in to manage partner leads, track deliverables, and view active project pipelines.\n\n"
+            f"Best Regards,\n"
+            f"The Urbanix Solution Team\n"
+            f"https://urbanixsolution.online"
+        )
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@urbanixsolution.online'),
+                recipient_list=[email],
+                fail_silently=True,
+            )
+            if request:
+                messages.success(request, f"Agency Partner approved! Account '{user.username}' created and credentials emailed to {email}.")
+        except Exception as e:
+            logger.exception(f"Failed to dispatch Agency Partner welcome email to {email}: {e}")
+
 
 
 
@@ -837,6 +990,24 @@ class CallPartnerApplicationAdmin(admin.ModelAdmin):
     ordering      = ['-created_at']
     readonly_fields = ['created_at']
 
+    def delete_model(self, request, obj):
+        """Hard delete single CallPartnerApplication record and cleanup linked User & TeamMember records."""
+        email = obj.email
+        obj.delete()
+        if email:
+            User.objects.filter(email__iexact=email.strip()).delete()
+            TeamMember.objects.filter(email__iexact=email.strip()).delete()
+
+    def delete_queryset(self, request, queryset):
+        """Hard delete selected CallPartnerApplication records and cleanup linked User & TeamMember records."""
+        emails = list(queryset.values_list('email', flat=True))
+        queryset.delete()
+        for email in emails:
+            if email:
+                User.objects.filter(email__iexact=email.strip()).delete()
+                TeamMember.objects.filter(email__iexact=email.strip()).delete()
+
+
 
     @admin.display(description='Status')
     def status_badge(self, obj):
@@ -912,9 +1083,24 @@ class CallPartnerApplicationAdmin(admin.ModelAdmin):
             profile.department = 'Growth & Referrals'
             profile.save()
 
+        # ROUTE TO FREELANCE TEAM (crm.TeamMember)
+        from crm.models import TeamMember
+        TeamMember.objects.update_or_create(
+            email=email,
+            defaults={
+                'name': full_name,
+                'role': 'Student / Call Partner',
+                'is_freelancer': True,
+                'standard_charge': 0.00,
+                'average_rating': 5.0,
+                'total_tasks_completed': 0,
+            }
+        )
+
         # Ensure DRF Token exists
         from rest_framework.authtoken.models import Token
         Token.objects.get_or_create(user=user)
+
 
         # Dispatch Welcome Email
         PARTNER_KIT_URL = "TODO: Add PDF link here later"
