@@ -237,7 +237,7 @@ export default function AgencyPortalPage() {
           )}
 
           {activeTab === 'payouts' && user.permissions?.can_view_finance !== false && (
-            <PayoutsView payouts={payouts} />
+            <PayoutsView payouts={payouts} user={user} onRefreshProfile={() => fetchDashboardData()} />
           )}
 
           {/* Global Quick Action Modals */}

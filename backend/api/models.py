@@ -267,6 +267,20 @@ class UserProfile(models.Model):
         default='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
     )
     
+    # Payment / Payout Details
+    upi_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="User's UPI ID e.g. user@okicici"
+    )
+    payment_qr_code = models.ImageField(
+        upload_to='payment_qrs/',
+        blank=True,
+        null=True,
+        help_text="Uploaded Payment QR Code image"
+    )
+
     # Dynamic RBAC Permissions
     can_view_finance = models.BooleanField(
         default=False,

@@ -90,6 +90,19 @@ class TeamMember(models.Model):
         null=True,
         help_text="Applicant's motivation / cover letter from the career application."
     )
+    upi_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Freelancer's UPI ID e.g. user@okicici"
+    )
+    payment_qr_code = models.ImageField(
+        upload_to='payment_qrs/',
+        blank=True,
+        null=True,
+        help_text="Uploaded Payment QR Code image"
+    )
+
 
     class Meta:
         ordering = ['name']

@@ -480,7 +480,7 @@ class DashboardDataView(APIView):
             }
         )
 
-        profile_data = UserProfileSerializer(profile).data
+        profile_data = UserProfileSerializer(profile, context={'request': request}).data
         perms = profile_data.get('permissions', {
             'is_admin': False,
             'can_view_finance': False,
@@ -557,9 +557,56 @@ class DashboardDataView(APIView):
         })
 
 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from crm.models import TeamMember
+
+class UserProfileUpdateView(APIView):
+    """
+    PATCH /api/user/profile/ or PUT /api/user/profile/
+    Allows authenticated users to update their UPI ID and Payment QR Code image.
+    Supports multipart/form-data for image upload.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+
+        upi_id = request.data.get('upi_id')
+        if upi_id is not None:
+            profile.upi_id = str(upi_id).strip()
+
+        if 'payment_qr_code' in request.FILES:
+            profile.payment_qr_code = request.FILES['payment_qr_code']
+
+        profile.save()
+
+        # Sync to crm.TeamMember if record exists
+        if user.email:
+            team_mem = TeamMember.objects.filter(email__iexact=user.email.strip()).first()
+            if team_mem:
+                if upi_id is not None:
+                    team_mem.upi_id = str(upi_id).strip()
+                if 'payment_qr_code' in request.FILES:
+                    team_mem.payment_qr_code = request.FILES['payment_qr_code']
+                team_mem.save()
+
+        serializer = UserProfileSerializer(profile, context={'request': request})
+        return Response({
+            "message": "Payment details updated successfully.",
+            "user": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        return self.patch(request, *args, **kwargs)
+
+
 # ===========================================================================
 # Call Partner Program Views & Endpoints
 # ===========================================================================
+
 
 class CallPartnerApplicationApplyView(generics.CreateAPIView):
     """

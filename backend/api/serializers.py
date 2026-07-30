@@ -273,6 +273,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     email = serializers.EmailField(source='user.email', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
+    payment_qr_code = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
 
     class Meta:
@@ -286,12 +287,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'role',
             'department',
             'avatar_url',
+            'upi_id',
+            'payment_qr_code',
             'permissions',
         ]
+
+    def get_payment_qr_code(self, obj):
+        if obj.payment_qr_code:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.payment_qr_code.url)
+            return obj.payment_qr_code.url
+        return None
 
     def get_name(self, obj):
         full_name = obj.user.get_full_name()
         return full_name if full_name.strip() else obj.user.username
+
 
     def get_permissions(self, obj):
         is_admin = obj.is_agency_admin or obj.user.is_superuser

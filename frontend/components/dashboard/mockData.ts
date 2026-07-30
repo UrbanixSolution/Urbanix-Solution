@@ -19,6 +19,10 @@ export interface UserProfile {
   email: string;
   joiningDate?: string;
   status?: 'active' | 'on_leave';
+  upi_id?: string;
+  payment_qr_code?: string;
+  upiId?: string;
+  paymentQrCode?: string;
   permissions?: UserPermissions;
 }
 

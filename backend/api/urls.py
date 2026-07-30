@@ -15,6 +15,7 @@ from .views import (
     DashboardDataView,
     CallPartnerApplicationApplyView,
     ClientLeadViewSet,
+    UserProfileUpdateView,
 )
 
 router = DefaultRouter()
@@ -28,6 +29,8 @@ urlpatterns = [
     path('auth/magic-login/', MagicLoginView.as_view(), name='api-auth-magic-login'),
     path('dashboard-data/', DashboardDataView.as_view(), name='api-dashboard-data'),
     path('me/', DashboardDataView.as_view(), name='api-me'),
+    path('user/profile/', UserProfileUpdateView.as_view(), name='api-user-profile-update'),
+    path('profile/', UserProfileUpdateView.as_view(), name='api-profile-update'),
     path('captcha/', CaptchaGenerateView.as_view(), name='api-captcha'),
     path('contact/', ContactLeadCreateView.as_view(), name='api-contact'),
     path('callback/', CallbackRequestCreateView.as_view(), name='api-callback'),
